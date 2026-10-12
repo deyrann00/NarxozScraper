@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "narxoz-threads": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/index.js"],
+      "env": {
+        "NARXOZ_SCRAPER_ROOT": "${NARXOZ_SCRAPER_ROOT:-}",
+        "THREADS_USERNAME": "${THREADS_USERNAME:-}",
+        "THREADS_PASSWORD": "${THREADS_PASSWORD:-}",
+        "THREADS_ACCESS_TOKEN": "${THREADS_ACCESS_TOKEN:-}"
+      }
+    }
+  }
+}

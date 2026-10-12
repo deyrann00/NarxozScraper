@@ -1,0 +1,16 @@
+{
+  "description": "Kick off the one-time Node Playwright install in the background so the first scrape is ready to go.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/ensure-deps.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

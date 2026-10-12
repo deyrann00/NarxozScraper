@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "narxoz-threads": {
+      "command": "node",
+      "args": ["REPLACE_WITH_REPO_PATH/plugins/claude/server/index.js"],
+      "cwd": "REPLACE_WITH_REPO_PATH"
+    }
+  }
+}

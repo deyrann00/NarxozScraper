@@ -1,0 +1,28 @@
+{
+  "name": "narxoz-threads-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript MCP server for Narxoz Threads scraping",
+  "bin": {
+    "narxoz-threads-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && npm run bundle",
+    "bundle": "node ./scripts/bundle.mjs",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "playwright": "^1.49.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2",
+    "esbuild": "^0.25.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "narxoz-threads-marketplace",
+  "owner": {
+    "name": "Ardak Shalkar",
+    "url": "https://github.com/ardakshalkar"
+  },
+  "metadata": {
+    "description": "Plugins for Narxoz Threads social listening"
+  },
+  "plugins": [
+    {
+      "name": "narxoz-threads",
+      "source": "./plugins/claude",
+      "description": "Scrape public Threads posts about Narxoz University (Node + Playwright, no Python)"
+    }
+  ]
+}

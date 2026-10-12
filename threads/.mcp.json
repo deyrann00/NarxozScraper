@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "narxoz-threads": {
+      "command": "node",
+      "args": ["plugins/claude/server/index.js"]
+    }
+  }
+}

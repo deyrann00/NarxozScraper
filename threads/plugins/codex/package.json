@@ -1,0 +1,13 @@
+{
+  "name": "narxoz-threads-codex-plugin",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Codex plugin: scrape Narxoz Threads posts with Node + Playwright",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

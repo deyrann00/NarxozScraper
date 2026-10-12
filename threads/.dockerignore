@@ -1,0 +1,13 @@
+.git
+.github
+.venv
+venv
+data
+logs
+plugins
+integrations
+scripts
+**/node_modules
+**/__pycache__
+.env
+.env.*

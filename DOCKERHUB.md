@@ -106,4 +106,4 @@ THREADS_PASSWORD=
 
 - `latest`, `1.0.0` — общий образ: 2ГИС + Threads, общий отчёт с анализом LLM и графиками, email
 
-Платформы: `linux/amd64`, `linux/arm64`. Отдельные образы по-прежнему доступны: `deyrann00/narxoz-2gis-scraper`, `deyrann00/socnetscraper`.
+Платформы: `linux/amd64`, `linux/arm64`.

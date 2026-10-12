@@ -1,0 +1,14 @@
+{
+  "name": "narxoz-2gis",
+  "displayName": "Narxoz 2GIS",
+  "version": "0.4.1",
+  "description": "Collect 2GIS reviews of Narxoz University branches with plain Node, sort them by relevance and sentiment with an OpenRouter LLM, and email the report.",
+  "author": {
+    "name": "d1rannn"
+  },
+  "license": "MIT",
+  "keywords": ["2gis", "narxoz", "reviews", "social-listening", "scraper"],
+  "commands": "./commands",
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}

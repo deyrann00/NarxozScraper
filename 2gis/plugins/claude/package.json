@@ -1,0 +1,10 @@
+{
+  "name": "narxoz-2gis-claude-plugin",
+  "version": "0.4.1",
+  "private": true,
+  "type": "module",
+  "description": "Claude Code plugin: collect Narxoz 2GIS reviews with plain Node",
+  "engines": {
+    "node": ">=18"
+  }
+}

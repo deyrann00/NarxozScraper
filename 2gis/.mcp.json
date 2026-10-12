@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "narxoz-2gis": {
+      "command": "node",
+      "args": ["plugins/claude/server/index.js"]
+    }
+  }
+}

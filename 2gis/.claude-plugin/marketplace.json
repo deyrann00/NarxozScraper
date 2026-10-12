@@ -1,0 +1,16 @@
+{
+  "name": "narxoz-2gis-marketplace",
+  "owner": {
+    "name": "d1rannn"
+  },
+  "metadata": {
+    "description": "Plugins for Narxoz 2GIS review monitoring"
+  },
+  "plugins": [
+    {
+      "name": "narxoz-2gis",
+      "source": "./plugins/claude",
+      "description": "Collect 2GIS reviews of Narxoz University branches (Node only, no browser, no Python)"
+    }
+  ]
+}

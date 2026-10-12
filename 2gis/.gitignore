@@ -1,0 +1,9 @@
+data/reviews.jsonl
+data/reviews.csv
+data/branches.json
+data/index.html
+data/runs/
+logs/
+node_modules/
+plugins/mcp/dist/
+.env

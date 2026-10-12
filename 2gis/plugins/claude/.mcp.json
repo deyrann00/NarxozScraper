@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "narxoz-2gis": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/server/index.js"
+      ],
+      "env": {
+        "NARXOZ_2GIS_ROOT": "${NARXOZ_2GIS_ROOT:-}",
+        "OPENROUTER_API_KEY": "${OPENROUTER_API_KEY:-}",
+        "SMTP_USER": "${SMTP_USER:-}",
+        "SMTP_PASS": "${SMTP_PASS:-}"
+      }
+    }
+  }
+}

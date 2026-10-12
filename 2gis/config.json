@@ -1,0 +1,40 @@
+{
+  "queries": [
+    "Нархоз",
+    "Narxoz"
+  ],
+  "name_filters": [
+    "нархоз",
+    "narxoz"
+  ],
+  "branches": [],
+  "exclude_branches": [],
+  "city": "almaty",
+  "domain": "2gis.kz",
+  "locale": "ru_KZ",
+  "timezone": "Asia/Almaty",
+  "lookback_hours": 24,
+  "week_hours": 168,
+  "max_reviews_per_branch": 500,
+  "review_api_key": "",
+  "llm": {
+    "enabled": true,
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "openai/gpt-4o-mini",
+    "api_key_env": "OPENROUTER_API_KEY",
+    "batch_size": 20,
+    "temperature": 0,
+    "relevance_prompt": ""
+  },
+  "email": {
+    "to": [],
+    "from": "",
+    "subject": "Нархоз · отзывы 2ГИС за {period}",
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 465,
+    "smtp_secure": true,
+    "smtp_user_env": "SMTP_USER",
+    "smtp_pass_env": "SMTP_PASS",
+    "period_hours": 168
+  }
+}

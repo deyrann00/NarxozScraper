@@ -7,7 +7,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-ROOT = Path(__file__).resolve().parent.parent
+# NARXOZ_SCRAPER_ROOT moves data/, logs/, config.json and .env elsewhere (same variable as the plugin).
+ROOT = Path(os.getenv("NARXOZ_SCRAPER_ROOT") or Path(__file__).resolve().parent.parent).resolve()
 DATA_DIR = ROOT / "data"
 LOG_DIR = ROOT / "logs"
 CONFIG_PATH = ROOT / "config.json"

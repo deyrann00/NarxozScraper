@@ -1,4 +1,5 @@
 import { scraperRoot } from "./repo.js";
+import { generateReport } from "./report/index.js";
 import { analyzeReviews } from "./scraper/analyze.js";
 import { sendReport } from "./scraper/email.js";
 import { scrapeOnce } from "./scraper/run.js";
@@ -11,7 +12,8 @@ Without a command the MCP server starts on stdio.
 Commands:
   run        Collect new reviews, analyse them with the LLM, rebuild data/index.html
   analyze    Analyse saved reviews only (no scraping)
-  email      Email the report only (no scraping)
+  email      Email the 2GIS report only (no scraping)
+  report     Build the combined 2GIS + Threads report (overall LLM analysis, charts)
   help       Show this message
 
 Options:
@@ -21,14 +23,16 @@ Options:
   --hours N      report window for --email / email (default: email.period_hours);
                  analyze: only reviews from the last N hours
   --force        analyze: re-classify reviews that already have an analysis
+  --no-overview  report: skip the overall LLM summary (numbers and topics only)
+  report --email email the combined report; --hours sets its period (default report.period_hours)
 
 Secrets come from the environment: OPENROUTER_API_KEY, SMTP_USER, SMTP_PASS.
 Exit code is 0 on success and 1 when the scrape or the email failed.`;
 
-type Flags = { full: boolean; email: boolean; force: boolean; to?: string[]; hours?: number };
+type Flags = { full: boolean; email: boolean; force: boolean; noOverview: boolean; to?: string[]; hours?: number };
 
 function parseArgs(args: string[]): Flags {
-  const flags: Flags = { full: false, email: false, force: false };
+  const flags: Flags = { full: false, email: false, force: false, noOverview: false };
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     const [name, inline] = arg.split("=", 2);
@@ -46,6 +50,9 @@ function parseArgs(args: string[]): Flags {
         break;
       case "--force":
         flags.force = true;
+        break;
+      case "--no-overview":
+        flags.noOverview = true;
         break;
       case "--to":
         flags.to = value()
@@ -105,6 +112,16 @@ export async function runCli(args: string[]): Promise<number> {
     if (command === "analyze") {
       const result = await analyzeReviews(root, { force: flags.force, hours: flags.hours ?? 0 });
       print({ command, started, ...result, dashboard: writeHtml(root) });
+      return 0;
+    }
+    if (command === "report") {
+      const result = await generateReport(root, {
+        hours: flags.hours,
+        overview: !flags.noOverview,
+        email: flags.email,
+        to: flags.to,
+      });
+      print({ command, started, ...result });
       return 0;
     }
     if (command === "email") {

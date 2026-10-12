@@ -113,26 +113,33 @@ function extractJson(content: string): unknown {
   return JSON.parse(start >= 0 && end > start ? raw.slice(start, end + 1) : raw);
 }
 
-async function classifyBatch(llm: LlmConfig, key: string, batch: Review[]): Promise<z.infer<typeof ItemSchema>[]> {
+/** One JSON-mode chat completion against any OpenAI-compatible endpoint; returns the parsed JSON. */
+export async function chatJson(
+  llm: LlmConfig,
+  key: string,
+  system: string,
+  user: string,
+  timeoutMs = TIMEOUT_MS
+): Promise<unknown> {
   const response = await fetch(`${llm.base_url.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
       // OpenRouter attribution headers; other OpenAI-compatible endpoints ignore them.
-      "HTTP-Referer": "https://github.com/deyrann00/Narxoz2GisScraper",
-      "X-Title": "Narxoz2GisScraper",
+      "HTTP-Referer": "https://github.com/deyrann00/NarxozScraper",
+      "X-Title": "NarxozScraper",
     },
     body: JSON.stringify({
       model: llm.model,
       temperature: llm.temperature,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: systemPrompt(llm) },
-        { role: "user", content: userPrompt(batch) },
+        { role: "system", content: system },
+        { role: "user", content: user },
       ],
     }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const body = await response.text();
   if (!response.ok) {
@@ -142,7 +149,11 @@ async function classifyBatch(llm: LlmConfig, key: string, batch: Review[]): Prom
   if (typeof content !== "string" || !content.trim()) {
     throw new Error(`empty completion: ${body.slice(0, 300)}`);
   }
-  return ResponseSchema.parse(extractJson(content)).items;
+  return extractJson(content);
+}
+
+async function classifyBatch(llm: LlmConfig, key: string, batch: Review[]): Promise<z.infer<typeof ItemSchema>[]> {
+  return ResponseSchema.parse(await chatJson(llm, key, systemPrompt(llm), userPrompt(batch))).items;
 }
 
 /**

@@ -36,5 +36,12 @@
     "smtp_user_env": "SMTP_USER",
     "smtp_pass_env": "SMTP_PASS",
     "period_hours": 168
+  },
+  "report": {
+    "threads_root": "",
+    "output": "",
+    "period_hours": 168,
+    "overview": true,
+    "subject": "Нархоз · 2ГИС и Threads за {period}"
   }
 }

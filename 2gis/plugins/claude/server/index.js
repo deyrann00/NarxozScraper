@@ -2980,7 +2980,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve4.call(this, root, ref);
+      let _sch = resolve5.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3007,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve4(root, ref) {
+    function resolve5(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3837,7 +3837,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve4(baseURI, relativeURI, options) {
+    function resolve5(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4206,7 +4206,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve4,
+      resolve: resolve5,
       resolveComponent,
       equal,
       serialize,
@@ -19305,7 +19305,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error3) {
@@ -19322,7 +19322,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       const earlyReject = (error3) => {
         reject(error3);
       };
@@ -19400,7 +19400,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve4(parseResult.data);
+            resolve5(parseResult.data);
           }
         } catch (error3) {
           reject(error3);
@@ -19661,12 +19661,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve4, interval);
+      const timeoutId = setTimeout(resolve5, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20757,7 +20757,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve4) => setTimeout(resolve4, pollInterval));
+      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21421,20 +21421,20 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message2) {
-    return new Promise((resolve4) => {
+    return new Promise((resolve5) => {
       const json2 = serializeMessage(message2);
       if (this._stdout.write(json2)) {
-        resolve4();
+        resolve5();
       } else {
-        this._stdout.once("drain", resolve4);
+        this._stdout.once("drain", resolve5);
       }
     });
   }
 };
 
 // src/index.ts
-import { existsSync as existsSync4, readdirSync, readFileSync as readFileSync4 } from "node:fs";
-import { join as join4 } from "node:path";
+import { existsSync as existsSync6, readdirSync, readFileSync as readFileSync6 } from "node:fs";
+import { join as join6 } from "node:path";
 
 // src/repo.ts
 import { existsSync, mkdirSync } from "node:fs";
@@ -21487,8 +21487,9 @@ function reviewsPath(root) {
   return join(root, "data", "reviews.jsonl");
 }
 
-// src/scraper/analyze.ts
-import { createHash } from "node:crypto";
+// src/report/index.ts
+import { mkdirSync as mkdirSync3, writeFileSync as writeFileSync5 } from "node:fs";
+import { dirname as dirname2 } from "node:path";
 
 // src/scraper/config.ts
 import { existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync, writeFileSync } from "node:fs";
@@ -21525,6 +21526,13 @@ var DEFAULTS = {
     smtp_user_env: "SMTP_USER",
     smtp_pass_env: "SMTP_PASS",
     period_hours: 168
+  },
+  report: {
+    threads_root: "",
+    output: "",
+    period_hours: 168,
+    overview: true,
+    subject: "\u041D\u0430\u0440\u0445\u043E\u0437 \xB7 2\u0413\u0418\u0421 \u0438 Threads \u0437\u0430 {period}"
   }
 };
 function paths(root = scraperRoot()) {
@@ -21543,325 +21551,23 @@ function paths(root = scraperRoot()) {
   };
 }
 function loadConfig(root = scraperRoot()) {
-  const cfg = { ...DEFAULTS, llm: { ...DEFAULTS.llm }, email: { ...DEFAULTS.email } };
+  const cfg = {
+    ...DEFAULTS,
+    llm: { ...DEFAULTS.llm },
+    email: { ...DEFAULTS.email },
+    report: { ...DEFAULTS.report }
+  };
   const file = paths(root).config;
   if (existsSync2(file)) {
-    const { llm, email: email2, ...rest } = JSON.parse(readFileSync(file, "utf8"));
+    const { llm, email: email2, report, ...rest } = JSON.parse(readFileSync(file, "utf8"));
     Object.assign(cfg, rest);
     Object.assign(cfg.llm, llm ?? {});
     Object.assign(cfg.email, email2 ?? {});
+    Object.assign(cfg.report, report ?? {});
   } else {
     writeFileSync(file, JSON.stringify(DEFAULTS, null, 2) + "\n", "utf8");
   }
   return cfg;
-}
-
-// src/scraper/store.ts
-import { existsSync as existsSync3, readFileSync as readFileSync2, writeFileSync as writeFileSync2 } from "node:fs";
-import { join as join3 } from "node:path";
-function upgrade(item) {
-  if (Array.isArray(item.replies)) {
-    return item;
-  }
-  const { official_answer: answer, comments_count: count, ...rest } = item;
-  return {
-    ...rest,
-    replies_count: Number(count) || 0,
-    replies: answer?.text ? [{ author: answer.org_name || "", from_org: true, text: answer.text, published_at: answer.published_at ?? null }] : []
-  };
-}
-function loadExisting(root) {
-  const file = paths(root).reviewsJsonl;
-  const reviews = {};
-  if (!existsSync3(file)) {
-    return reviews;
-  }
-  for (const line of readFileSync2(file, "utf8").split(/\r?\n/)) {
-    if (!line.trim()) {
-      continue;
-    }
-    try {
-      const item = upgrade(JSON.parse(line));
-      if (item.id) {
-        reviews[item.id] = item;
-      }
-    } catch {
-      continue;
-    }
-  }
-  return reviews;
-}
-function mergeReviews(existing, incoming) {
-  let newCount = 0;
-  for (const review of incoming) {
-    if (!existing[review.id]) {
-      newCount += 1;
-    }
-    existing[review.id] = { ...existing[review.id], ...review };
-  }
-  const ordered = Object.values(existing).sort(
-    (a, b) => String(b.published_at || b.scraped_at || "").localeCompare(String(a.published_at || a.scraped_at || ""))
-  );
-  return [ordered, newCount];
-}
-function saveReviews(root, reviews) {
-  const { reviewsJsonl, reviewsCsv } = paths(root);
-  writeFileSync2(
-    reviewsJsonl,
-    reviews.map((review) => JSON.stringify(review)).join("\n") + (reviews.length ? "\n" : ""),
-    "utf8"
-  );
-  const fields = [
-    "id",
-    "branch_id",
-    "branch_name",
-    "rating",
-    "author",
-    "text",
-    "published_at",
-    "likes_count",
-    "replies_count",
-    "replies",
-    "url",
-    "scraped_at",
-    "relevant",
-    "sentiment",
-    "topics",
-    "summary"
-  ];
-  const cell = (review, field) => {
-    const value = field === "replies" ? review.replies.map((reply) => `${reply.author}: ${reply.text}`).join("\n---\n") : field === "relevant" || field === "sentiment" || field === "summary" ? review.analysis?.[field] : field === "topics" ? review.analysis?.topics.join("; ") : review[field];
-    return `"${String(value ?? "").replace(/"/g, '""')}"`;
-  };
-  const rows = [fields.join(","), ...reviews.map((review) => fields.map((f) => cell(review, f)).join(","))];
-  writeFileSync2(reviewsCsv, rows.join("\n"), "utf8");
-}
-function loadBranches(root) {
-  const file = paths(root).branches;
-  if (!existsSync3(file)) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(readFileSync2(file, "utf8"));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-function saveBranches(root, branches) {
-  writeFileSync2(paths(root).branches, JSON.stringify(branches, null, 2) + "\n", "utf8");
-}
-function saveRun(root, summary) {
-  const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-  const file = join3(paths(root).runs, `${stamp}.json`);
-  writeFileSync2(file, JSON.stringify(summary, null, 2), "utf8");
-  return file;
-}
-function lookbackReviews(reviews, hours) {
-  const cutoff = Date.now() - Math.max(1, hours) * 3600 * 1e3;
-  return reviews.filter((review) => {
-    const ms = Date.parse(String(review.published_at || ""));
-    return !Number.isNaN(ms) && ms >= cutoff;
-  });
-}
-
-// src/scraper/analyze.ts
-var FALLBACK_MODEL = "rating-fallback";
-var TIMEOUT_MS = 12e4;
-var CONCURRENCY = 4;
-var MAX_TEXT = 2e3;
-var DEFAULT_RELEVANCE = [
-  "\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432 \u2014 \u0442\u043E\u0442, \u0438\u0437 \u043A\u043E\u0442\u043E\u0440\u043E\u0433\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u0443\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0430 \u043C\u043E\u0436\u0435\u0442 \u0447\u0442\u043E-\u0442\u043E \u0443\u0437\u043D\u0430\u0442\u044C \u0438\u043B\u0438 \u0447\u0442\u043E-\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u0438\u0442\u044C:",
-  "\u0443\u0447\u0451\u0431\u0430 \u0438 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u043E \u043F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u043D\u0438\u044F, \u043F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u0442\u0435\u043B\u0438 \u0438 \u043A\u0443\u0440\u0430\u0442\u043E\u0440\u044B, \u0434\u0435\u043A\u0430\u043D\u0430\u0442 \u0438 \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F, \u043F\u0440\u0438\u0451\u043C\u043D\u0430\u044F \u043A\u043E\u043C\u0438\u0441\u0441\u0438\u044F \u0438 \u043F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435,",
-  "\u043E\u043F\u043B\u0430\u0442\u0430, \u0441\u0442\u0438\u043F\u0435\u043D\u0434\u0438\u0438 \u0438 \u0433\u0440\u0430\u043D\u0442\u044B, \u043E\u0431\u0449\u0435\u0436\u0438\u0442\u0438\u0435, \u0441\u0442\u043E\u043B\u043E\u0432\u0430\u044F, \u0437\u0434\u0430\u043D\u0438\u044F \u0438 \u0438\u043D\u0444\u0440\u0430\u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430, Wi-Fi, \u0431\u0438\u0431\u043B\u0438\u043E\u0442\u0435\u043A\u0430, \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u044C,",
-  "\u043E\u0445\u0440\u0430\u043D\u0430 \u0438 \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u043D\u043E\u0439 \u0440\u0435\u0436\u0438\u043C, \u043E\u0442\u043D\u043E\u0448\u0435\u043D\u0438\u0435 \u043F\u0435\u0440\u0441\u043E\u043D\u0430\u043B\u0430, \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435, \u0442\u0440\u0443\u0434\u043E\u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E, \u0441\u0442\u0443\u0434\u0435\u043D\u0447\u0435\u0441\u043A\u0430\u044F \u0436\u0438\u0437\u043D\u044C.",
-  "\u041F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432 \u0441 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u0438\u043A\u043E\u0439 (\u0447\u0442\u043E \u0438\u043C\u0435\u043D\u043D\u043E \u043F\u043E\u043D\u0440\u0430\u0432\u0438\u043B\u043E\u0441\u044C) \u0442\u043E\u0436\u0435 \u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u0435\u043D.",
-  "\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432: \u0441\u043F\u0430\u043C \u0438 \u0440\u0435\u043A\u043B\u0430\u043C\u0430, \u0431\u0435\u0441\u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442 (\xAB\u043D\u043E\u0440\u043C\xBB, \xAB\u043E\u043A\xBB, \u043E\u0434\u043D\u0438 \u0441\u043C\u0430\u0439\u043B\u044B), \u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0437\u044B\u0432 \u0441 \u043E\u0434\u043D\u043E\u0439 \u043E\u0446\u0435\u043D\u043A\u043E\u0439,",
-  "\u043E\u0442\u0437\u044B\u0432 \u044F\u0432\u043D\u043E \u043D\u0435 \u043E \u041D\u0430\u0440\u0445\u043E\u0437\u0435 (\u043E \u0434\u0440\u0443\u0433\u043E\u0439 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0438\u043B\u0438 \u043E\u0448\u0438\u0431\u043E\u0447\u043D\u043E \u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 \u043D\u0435 \u0432 \u0442\u043E\u0439 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0435), \u043E\u0441\u043A\u043E\u0440\u0431\u043B\u0435\u043D\u0438\u044F \u0431\u0435\u0437 \u0441\u0443\u0442\u0438,",
-  "\u043E\u0442\u0437\u044B\u0432 \u043E \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0435 \u0438\u043B\u0438 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0435 \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438, \u043D\u0435 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0445 \u0441 \u0443\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u043E\u043C."
-].join(" ");
-var ItemSchema = external_exports.object({
-  id: external_exports.coerce.string(),
-  relevant: external_exports.boolean(),
-  sentiment: external_exports.enum(["positive", "neutral", "negative"]),
-  topics: external_exports.array(external_exports.string()).default([]),
-  summary: external_exports.string().default("")
-});
-var ResponseSchema = external_exports.object({ items: external_exports.array(ItemSchema) });
-function textHash(review) {
-  return createHash("sha1").update(review.text || "").digest("hex");
-}
-function llmKey(llm) {
-  return (process.env[llm.api_key_env || "OPENROUTER_API_KEY"] || "").trim();
-}
-function llmReady(llm) {
-  return Boolean(llm.enabled && llm.model && llm.base_url && llmKey(llm));
-}
-function ratingSentiment(rating) {
-  if (!rating) return "neutral";
-  return rating >= 4 ? "positive" : rating <= 2 ? "negative" : "neutral";
-}
-function fallback(review) {
-  return {
-    relevant: true,
-    sentiment: ratingSentiment(review.rating),
-    topics: [],
-    summary: "",
-    model: FALLBACK_MODEL,
-    text_hash: textHash(review),
-    analyzed_at: (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-function needsAnalysis(review, useLlm, force) {
-  const current = review.analysis;
-  if (force || !current) return true;
-  if (current.text_hash !== textHash(review)) return true;
-  return useLlm && current.model === FALLBACK_MODEL;
-}
-function systemPrompt(llm) {
-  return [
-    "\u0422\u044B \u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u0443\u0435\u0448\u044C \u043E\u0442\u0437\u044B\u0432\u044B \u0438\u0437 2\u0413\u0418\u0421 \u043E\u0431 \u0423\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0435 \u041D\u0430\u0440\u0445\u043E\u0437 (\u0410\u043B\u043C\u0430\u0442\u044B) \u0434\u043B\u044F \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0443\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0430.",
-    llm.relevance_prompt.trim() || DEFAULT_RELEVANCE,
-    "\u0414\u043B\u044F \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u043E\u0442\u0437\u044B\u0432\u0430 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438:",
-    "relevant \u2014 true/false \u043F\u043E \u043F\u0440\u0430\u0432\u0438\u043B\u0430\u043C \u0432\u044B\u0448\u0435;",
-    'sentiment \u2014 "positive", "neutral" \u0438\u043B\u0438 "negative" \u043F\u043E \u0441\u043C\u044B\u0441\u043B\u0443 \u0442\u0435\u043A\u0441\u0442\u0430 (\u0437\u0432\u0451\u0437\u0434\u044B \u2014 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430, \u043D\u043E \u0442\u0435\u043A\u0441\u0442 \u0432\u0430\u0436\u043D\u0435\u0435; \u0441\u043C\u0435\u0448\u0430\u043D\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432 \u0431\u0435\u0437 \u044F\u0432\u043D\u043E\u0433\u043E \u043F\u0435\u0440\u0435\u0432\u0435\u0441\u0430 \u2014 "neutral");',
-    "topics \u2014 1\u20133 \u043A\u043E\u0440\u043E\u0442\u043A\u0438\u0445 \u0442\u0435\u043C\u044B \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C \u0432 \u043D\u0438\u0436\u043D\u0435\u043C \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0435 (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 \xAB\u043E\u0431\u0449\u0435\u0436\u0438\u0442\u0438\u0435\xBB, \xAB\u043F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u0442\u0435\u043B\u0438\xBB, \xAB\u043E\u043F\u043B\u0430\u0442\u0430\xBB), \u043F\u0443\u0441\u0442\u043E\u0439 \u043C\u0430\u0441\u0441\u0438\u0432 \u0434\u043B\u044F \u043D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445;",
-    "summary \u2014 \u0441\u0443\u0442\u044C \u043E\u0442\u0437\u044B\u0432\u0430 \u043E\u0434\u043D\u043E\u0439 \u0444\u0440\u0430\u0437\u043E\u0439 \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C, \u0434\u043E 160 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432.",
-    '\u041E\u0442\u0432\u0435\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E JSON \u0432\u0438\u0434\u0430 {"items":[{"id":"...","relevant":true,"sentiment":"negative","topics":["..."],"summary":"..."}]} \u2014 \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0443 \u043D\u0430 \u043A\u0430\u0436\u0434\u044B\u0439 \u043E\u0442\u0437\u044B\u0432, id \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439.'
-  ].join("\n");
-}
-function userPrompt(batch) {
-  const items = batch.map((review) => ({
-    id: review.id,
-    branch: review.branch_name,
-    stars: review.rating,
-    text: (review.text || "").slice(0, MAX_TEXT),
-    org_reply: review.replies.find((reply) => reply.from_org)?.text.slice(0, 500) || void 0
-  }));
-  return JSON.stringify({ reviews: items });
-}
-function extractJson(content) {
-  const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const raw = (fenced ? fenced[1] : content).trim();
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
-  return JSON.parse(start >= 0 && end > start ? raw.slice(start, end + 1) : raw);
-}
-async function classifyBatch(llm, key, batch) {
-  const response = await fetch(`${llm.base_url.replace(/\/+$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      // OpenRouter attribution headers; other OpenAI-compatible endpoints ignore them.
-      "HTTP-Referer": "https://github.com/deyrann00/Narxoz2GisScraper",
-      "X-Title": "Narxoz2GisScraper"
-    },
-    body: JSON.stringify({
-      model: llm.model,
-      temperature: llm.temperature,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt(llm) },
-        { role: "user", content: userPrompt(batch) }
-      ]
-    }),
-    signal: AbortSignal.timeout(TIMEOUT_MS)
-  });
-  const body = await response.text();
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${body.slice(0, 300)}`);
-  }
-  const content = JSON.parse(body)?.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || !content.trim()) {
-    throw new Error(`empty completion: ${body.slice(0, 300)}`);
-  }
-  return ResponseSchema.parse(extractJson(content)).items;
-}
-async function analyzeReviews(root, options = {}) {
-  const { llm } = loadConfig(root);
-  const useLlm = llmReady(llm);
-  const key = llmKey(llm);
-  const errors2 = [];
-  const [reviews] = mergeReviews(loadExisting(root), []);
-  const scope = options.hours && options.hours > 0 ? lookbackReviews(reviews, options.hours) : reviews;
-  const pending = scope.filter((review) => needsAnalysis(review, useLlm, Boolean(options.force)));
-  let analyzed = 0;
-  if (!useLlm) {
-    for (const review of pending) {
-      review.analysis = fallback(review);
-      analyzed += 1;
-    }
-    if (llm.enabled && !key && pending.length) {
-      errors2.push(`LLM: \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u0430\u044F ${llm.api_key_env} \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430 \u2014 \u0442\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0430 \u043F\u043E \u0437\u0432\u0451\u0437\u0434\u0430\u043C`);
-    }
-  } else {
-    const size = Math.max(1, Math.min(llm.batch_size || 20, 50));
-    const batches = [];
-    for (let i = 0; i < pending.length; i += size) {
-      batches.push(pending.slice(i, i + size));
-    }
-    let next = 0;
-    const worker = async () => {
-      while (next < batches.length) {
-        const batch = batches[next++];
-        let items = null;
-        for (let attempt = 1; attempt <= 2 && !items; attempt += 1) {
-          try {
-            items = await classifyBatch(llm, key, batch);
-          } catch (err) {
-            if (attempt === 2) {
-              const ids2 = `${batch[0].id}\u2026${batch[batch.length - 1].id}`;
-              errors2.push(`LLM batch ${ids2}: ${err instanceof Error ? err.message : String(err)}`);
-            }
-          }
-        }
-        if (!items) continue;
-        const byId = new Map(items.map((item) => [item.id, item]));
-        const now = (/* @__PURE__ */ new Date()).toISOString();
-        for (const review of batch) {
-          const item = byId.get(review.id);
-          if (!item) continue;
-          review.analysis = {
-            relevant: item.relevant,
-            sentiment: item.sentiment,
-            topics: item.topics.slice(0, 5),
-            summary: item.summary.slice(0, 300),
-            model: llm.model,
-            text_hash: textHash(review),
-            analyzed_at: now
-          };
-          analyzed += 1;
-        }
-      }
-    };
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batches.length) }, worker));
-  }
-  if (analyzed) {
-    saveReviews(root, reviews);
-  }
-  const by_sentiment = { positive: 0, neutral: 0, negative: 0 };
-  let relevant = 0;
-  let irrelevant = 0;
-  for (const review of scope) {
-    if (!review.analysis) continue;
-    if (review.analysis.relevant) {
-      relevant += 1;
-      by_sentiment[review.analysis.sentiment] += 1;
-    } else {
-      irrelevant += 1;
-    }
-  }
-  return {
-    model: useLlm ? llm.model : FALLBACK_MODEL,
-    analyzed,
-    skipped_cached: scope.length - pending.length,
-    total: scope.length,
-    relevant,
-    irrelevant,
-    by_sentiment,
-    errors: errors2
-  };
 }
 
 // src/scraper/email.ts
@@ -23014,12 +22720,12 @@ var getLogger = (options, defaults) => {
   });
   return response;
 };
-var callbackPromise = (resolve4, reject) => function(...args) {
+var callbackPromise = (resolve5, reject) => function(...args) {
   const err = args.shift();
   if (err) {
     reject(err);
   } else {
-    resolve4(...args);
+    resolve5(...args);
   }
 };
 var parseDataURI = (uri) => {
@@ -23086,8 +22792,8 @@ function resolveContent(data, key, options, callback) {
   options = options || {};
   let promise;
   if (!callback) {
-    promise = new Promise((resolve4, reject) => {
-      callback = callbackPromise(resolve4, reject);
+    promise = new Promise((resolve5, reject) => {
+      callback = callbackPromise(resolve5, reject);
     });
   }
   resolveContentValue(data, key, options, callback);
@@ -26908,8 +26614,8 @@ var MimeNode = class _MimeNode {
   build(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve4, reject) => {
-        callback = callbackPromise(resolve4, reject);
+      promise = new Promise((resolve5, reject) => {
+        callback = callbackPromise(resolve5, reject);
       });
     }
     const done = callback;
@@ -29261,8 +28967,8 @@ var Mail = class extends EventEmitter {
   sendMail(data, callback = null) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve4, reject) => {
-        callback = callbackPromise(resolve4, reject);
+      promise = new Promise((resolve5, reject) => {
+        callback = callbackPromise(resolve5, reject);
       });
     }
     const done = callback;
@@ -29961,7 +29667,7 @@ var SMTPConnection = class extends EventEmitter2 {
       const handler = this.customAuth.get(this._authMethod);
       let lastResponse;
       let returned = false;
-      const resolve4 = () => {
+      const resolve5 = () => {
         if (returned) {
           return;
         }
@@ -29985,8 +29691,8 @@ var SMTPConnection = class extends EventEmitter2 {
       const sendCommand = (cmd, done) => {
         let promise;
         if (!done) {
-          promise = new Promise((resolve5, reject2) => {
-            done = callbackPromise(resolve5, reject2);
+          promise = new Promise((resolve6, reject2) => {
+            done = callbackPromise(resolve6, reject2);
           });
         }
         this._responseActions.push((str) => {
@@ -30018,11 +29724,11 @@ var SMTPConnection = class extends EventEmitter2 {
         authMethods: [].concat(this._supportedAuth),
         maxAllowedSize: this._maxAllowedSize || false,
         sendCommand,
-        resolve: resolve4,
+        resolve: resolve5,
         reject
       });
       if (handlerResponse && typeof handlerResponse.catch === "function") {
-        handlerResponse.then(resolve4).catch(reject);
+        handlerResponse.then(resolve5).catch(reject);
       }
       return;
     }
@@ -32781,8 +32487,8 @@ var SMTPPool = class extends EventEmitter4 {
   verify(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve4, reject) => {
-        callback = callbackPromise(resolve4, reject);
+      promise = new Promise((resolve5, reject) => {
+        callback = callbackPromise(resolve5, reject);
       });
     }
     const done = callback;
@@ -33073,8 +32779,8 @@ var SMTPTransport = class extends EventEmitter5 {
   verify(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve4, reject) => {
-        callback = callbackPromise(resolve4, reject);
+      promise = new Promise((resolve5, reject) => {
+        callback = callbackPromise(resolve5, reject);
       });
     }
     const done = callback;
@@ -33597,8 +33303,8 @@ var SESTransport = class extends EventEmitter6 {
   verify(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve4, reject) => {
-        callback = callbackPromise(resolve4, reject);
+      promise = new Promise((resolve5, reject) => {
+        callback = callbackPromise(resolve5, reject);
       });
     }
     const done = callback;
@@ -33684,8 +33390,8 @@ function createTestAccount(apiUrl, callback) {
     apiUrl = false;
   }
   if (!callback) {
-    promise = new Promise((resolve4, reject) => {
-      callback = callbackPromise(resolve4, reject);
+    promise = new Promise((resolve5, reject) => {
+      callback = callbackPromise(resolve5, reject);
     });
   }
   const done = callback;
@@ -33766,6 +33472,115 @@ var nodemailer = {
   getTestMessageUrl
 };
 var nodemailer_default = nodemailer;
+
+// src/scraper/store.ts
+import { existsSync as existsSync3, readFileSync as readFileSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import { join as join3 } from "node:path";
+function upgrade(item) {
+  if (Array.isArray(item.replies)) {
+    return item;
+  }
+  const { official_answer: answer, comments_count: count, ...rest } = item;
+  return {
+    ...rest,
+    replies_count: Number(count) || 0,
+    replies: answer?.text ? [{ author: answer.org_name || "", from_org: true, text: answer.text, published_at: answer.published_at ?? null }] : []
+  };
+}
+function loadExisting(root) {
+  const file = paths(root).reviewsJsonl;
+  const reviews = {};
+  if (!existsSync3(file)) {
+    return reviews;
+  }
+  for (const line of readFileSync2(file, "utf8").split(/\r?\n/)) {
+    if (!line.trim()) {
+      continue;
+    }
+    try {
+      const item = upgrade(JSON.parse(line));
+      if (item.id) {
+        reviews[item.id] = item;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return reviews;
+}
+function mergeReviews(existing, incoming) {
+  let newCount = 0;
+  for (const review of incoming) {
+    if (!existing[review.id]) {
+      newCount += 1;
+    }
+    existing[review.id] = { ...existing[review.id], ...review };
+  }
+  const ordered = Object.values(existing).sort(
+    (a, b) => String(b.published_at || b.scraped_at || "").localeCompare(String(a.published_at || a.scraped_at || ""))
+  );
+  return [ordered, newCount];
+}
+function saveReviews(root, reviews) {
+  const { reviewsJsonl, reviewsCsv } = paths(root);
+  writeFileSync2(
+    reviewsJsonl,
+    reviews.map((review) => JSON.stringify(review)).join("\n") + (reviews.length ? "\n" : ""),
+    "utf8"
+  );
+  const fields = [
+    "id",
+    "branch_id",
+    "branch_name",
+    "rating",
+    "author",
+    "text",
+    "published_at",
+    "likes_count",
+    "replies_count",
+    "replies",
+    "url",
+    "scraped_at",
+    "relevant",
+    "sentiment",
+    "topics",
+    "summary"
+  ];
+  const cell = (review, field) => {
+    const value = field === "replies" ? review.replies.map((reply) => `${reply.author}: ${reply.text}`).join("\n---\n") : field === "relevant" || field === "sentiment" || field === "summary" ? review.analysis?.[field] : field === "topics" ? review.analysis?.topics.join("; ") : review[field];
+    return `"${String(value ?? "").replace(/"/g, '""')}"`;
+  };
+  const rows = [fields.join(","), ...reviews.map((review) => fields.map((f) => cell(review, f)).join(","))];
+  writeFileSync2(reviewsCsv, rows.join("\n"), "utf8");
+}
+function loadBranches(root) {
+  const file = paths(root).branches;
+  if (!existsSync3(file)) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(readFileSync2(file, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+function saveBranches(root, branches) {
+  writeFileSync2(paths(root).branches, JSON.stringify(branches, null, 2) + "\n", "utf8");
+}
+function saveRun(root, summary) {
+  const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  const file = join3(paths(root).runs, `${stamp}.json`);
+  writeFileSync2(file, JSON.stringify(summary, null, 2), "utf8");
+  return file;
+}
+function lookbackReviews(reviews, hours) {
+  const cutoff = Date.now() - Math.max(1, hours) * 3600 * 1e3;
+  return reviews.filter((review) => {
+    const ms = Date.parse(String(review.published_at || ""));
+    return !Number.isNaN(ms) && ms >= cutoff;
+  });
+}
 
 // src/scraper/view.ts
 import { spawn as spawn2 } from "node:child_process";
@@ -34324,9 +34139,9 @@ function buildReportHtml(root, hours) {
     }
   };
 }
-async function sendReport(root, options = {}) {
+function smtpSetup(root, toOverride) {
   const { email: email2 } = loadConfig(root);
-  const to = (options.to?.length ? options.to : email2.to).map((address) => address.trim()).filter(Boolean);
+  const to = (toOverride?.length ? toOverride : email2.to).map((address) => address.trim()).filter(Boolean);
   const user = (process.env[email2.smtp_user_env] || "").trim();
   const pass = process.env[email2.smtp_pass_env] || "";
   const from = email2.from.trim() || user;
@@ -34340,15 +34155,19 @@ async function sendReport(root, options = {}) {
     throw new Error(`\u041D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0430 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u043F\u043E\u0447\u0442\u044B, \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442:
 - ${missing.join("\n- ")}`);
   }
-  const hours = options.hours && options.hours > 0 ? options.hours : email2.period_hours || 168;
-  const { html, counts } = buildReportHtml(root, hours);
-  const dashboard = writeHtml(root);
   const transport = nodemailer_default.createTransport({
     host: email2.smtp_host,
     port: email2.smtp_port,
     secure: email2.smtp_secure,
     auth: { user, pass }
   });
+  return { email: email2, to, from, transport };
+}
+async function sendReport(root, options = {}) {
+  const { email: email2, to, from, transport } = smtpSetup(root, options.to);
+  const hours = options.hours && options.hours > 0 ? options.hours : email2.period_hours || 168;
+  const { html, counts } = buildReportHtml(root, hours);
+  const dashboard = writeHtml(root);
   const info = await transport.sendMail({
     from,
     to,
@@ -34357,6 +34176,970 @@ async function sendReport(root, options = {}) {
     attachments: [{ filename: "narxoz-2gis-report.html", content: readFileSync3(dashboard), contentType: "text/html" }]
   });
   return { sent_to: to, from, period_hours: hours, message_id: info.messageId, ...counts };
+}
+
+// src/report/email.ts
+var COLORS2 = { negative: "#e34948", neutral: "#8a8982", positive: "#2a78d6" };
+var SOURCE = { "2gis": "2\u0413\u0418\u0421", threads: "Threads" };
+var esc3 = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+var TH2 = 'style="text-align:left;padding:8px 10px;border-bottom:2px solid #e6e5e1;color:#52514e;font-size:12px"';
+var TD2 = 'style="padding:8px 10px;border-bottom:1px solid #e6e5e1;vertical-align:top;font-size:13px"';
+var TDN2 = 'style="padding:8px 10px;border-bottom:1px solid #e6e5e1;text-align:right;font-size:13px;white-space:nowrap"';
+function when(value, timezone) {
+  const ms = Date.parse(String(value || ""));
+  return Number.isNaN(ms) ? "" : new Date(ms).toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short", timeZone: timezone });
+}
+function combinedEmailHtml(overview, stats, items, hours, timezone) {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const negatives = items.filter((item) => item.relevant && item.sentiment === "negative").slice(0, 40);
+  const summary = overview.summary ? overview.summary.split(/\n\s*\n/).map((p) => `<p style="margin:0 0 10px;line-height:1.55">${esc3(p.trim())}</p>`).join("") : `<p style="color:#6b6a65">${esc3(overview.note)}</p>`;
+  const problems = overview.problems.length ? overview.problems.map((problem) => {
+    const examples = problem.example_ids.map((id) => byId.get(id)).filter((item) => Boolean(item)).map(
+      (item) => `<li><a href="${esc3(item.url)}" style="color:#1c5cab">${SOURCE[item.source]}</a> \u2014 ${esc3((item.summary || item.text).slice(0, 140))}</li>`
+    ).join("");
+    return `<div style="border-left:3px solid ${COLORS2.negative};padding:6px 12px;margin:10px 0"><b>${esc3(problem.title)}</b> <span style="color:#52514e">\xB7 ${problem.count} \u0443\u043F\u043E\u043C. \xB7 ${problem.sources.map((s) => SOURCE[s]).join(", ")}</span>` + (problem.description ? `<div style="color:#52514e;font-size:14px;margin-top:4px">${esc3(problem.description)}</div>` : "") + (examples ? `<ul style="margin:6px 0 0;padding-left:18px;font-size:13px;color:#52514e">${examples}</ul>` : "") + "</div>";
+  }).join("") : '<p style="color:#6b6a65">\u041D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439 \u0437\u0430 \u043F\u0435\u0440\u0438\u043E\u0434 \u043D\u0435\u0442.</p>';
+  const sourceRow = (source) => {
+    const s = stats.by_source[source];
+    return `<tr><td ${TD2}>${SOURCE[source]}</td><td ${TDN2}><b style="color:${COLORS2.negative}">${s.negative}</b></td><td ${TDN2}>${s.neutral}</td><td ${TDN2}><b style="color:${COLORS2.positive}">${s.positive}</b></td><td ${TDN2}>${s.irrelevant}</td><td ${TDN2}>${s.not_analyzed}</td></tr>`;
+  };
+  const negativeRows = negatives.map(
+    (item) => `<tr><td ${TD2}>${esc3(when(item.published_at, timezone))}</td><td ${TD2}>${SOURCE[item.source]}</td><td ${TD2}>${esc3(item.place)}</td><td ${TDN2}>${item.rating ?? "\u2014"}</td><td ${TD2}>${esc3(item.summary || item.text.slice(0, 240))}</td><td ${TD2}><a href="${esc3(item.url)}" style="color:#1c5cab">\u043E\u0442\u043A\u0440\u044B\u0442\u044C</a></td></tr>`
+  ).join("");
+  return [
+    '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"></head>',
+    '<body style="margin:0;background:#f5f5f3;font-family:Segoe UI,Arial,sans-serif;color:#0b0b0b">',
+    '<div style="max-width:880px;margin:0 auto;padding:24px 16px">',
+    '<div style="background:#01080A;color:#fff;border-radius:14px;padding:20px 22px">',
+    '<div style="color:#D50032;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700">NarxozScraper</div>',
+    `<div style="font-size:22px;font-weight:650;margin:6px 0">2\u0413\u0418\u0421 \u0438 Threads \u0437\u0430 ${esc3(periodLabel(hours))}</div>`,
+    `<div style="color:#c9cdd3;font-size:13px">\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445: ${stats.relevant} \xB7 \u043D\u0435\u0433\u0430\u0442\u0438\u0432 ${stats.sentiment.negative} \xB7 \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E ${stats.sentiment.neutral} \xB7 \u043F\u043E\u0437\u0438\u0442\u0438\u0432 ${stats.sentiment.positive}` + (stats.avg_rating_2gis != null ? ` \xB7 \u2605 2\u0413\u0418\u0421 ${stats.avg_rating_2gis}` : "") + (overview.model ? ` \xB7 \u0430\u043D\u0430\u043B\u0438\u0437: ${esc3(overview.model)}` : "") + "</div></div>",
+    '<div style="background:#fcfcfb;border:1px solid #e6e5e1;border-radius:14px;padding:6px 18px 18px;margin-top:16px">',
+    '<h2 style="font-size:16px;margin:16px 0 8px">\u041E\u0431\u0449\u0438\u0439 \u0430\u043D\u0430\u043B\u0438\u0437</h2>',
+    summary,
+    '<h2 style="font-size:16px;margin:20px 0 4px">\u0413\u043B\u0430\u0432\u043D\u044B\u0435 \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u044B</h2>',
+    problems,
+    '<h2 style="font-size:16px;margin:20px 0 6px">\u041F\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430\u043C</h2>',
+    '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%">',
+    `<tr><th ${TH2}>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th ${TH2}>\u041D\u0435\u0433\u0430\u0442\u0438\u0432</th><th ${TH2}>\u041D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E</th><th ${TH2}>\u041F\u043E\u0437\u0438\u0442\u0438\u0432</th><th ${TH2}>\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0435</th><th ${TH2}>\u0411\u0435\u0437 \u0430\u043D\u0430\u043B\u0438\u0437\u0430</th></tr>`,
+    sourceRow("2gis"),
+    sourceRow("threads"),
+    "</table>",
+    negatives.length ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS2.negative}">\u041D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \xB7 ${stats.sentiment.negative}</h2><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr><th ${TH2}>\u0414\u0430\u0442\u0430</th><th ${TH2}>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th ${TH2}>\u041C\u0435\u0441\u0442\u043E</th><th ${TH2}>\u2605</th><th ${TH2}>\u0421\u0443\u0442\u044C</th><th ${TH2}></th></tr>` + negativeRows + "</table>" : "",
+    "</div>",
+    '<p style="color:#6b6a65;font-size:12px;margin-top:16px">\u041F\u043E\u043B\u043D\u044B\u0439 \u043E\u0442\u0447\u0451\u0442 \u0441 \u0433\u0440\u0430\u0444\u0438\u043A\u0430\u043C\u0438 \u0438 \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u043C\u0438 \u2014 \u0432\u043E \u0432\u043B\u043E\u0436\u0435\u043D\u0438\u0438 (report.html).</p>',
+    "</div></body></html>"
+  ].join("\n");
+}
+
+// src/report/html.ts
+var TEMPLATE2 = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>\u041D\u0430\u0440\u0445\u043E\u0437 \xB7 2\u0413\u0418\u0421 \u0438 Threads</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --brand: #D50032;
+      --head: #01080A;
+      --ink: #0b0b0b;
+      --ink-2: #52514e;
+      --muted: #6b6a65;
+      --line: #e6e5e1;
+      --bg: #f5f5f3;
+      --card: #fcfcfb;
+      --raised: #ffffff;
+      --neg: #e34948;
+      --neu: #b8b7b0;
+      --pos: #2a78d6;
+      --neg-soft: #fde9e8;
+      --pos-soft: #e3eefb;
+      --neu-soft: #efeeea;
+      --link: #1c5cab;
+      --star: #c98500;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:where(:not([data-theme="light"])) {
+        color-scheme: dark;
+        --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9990; --line: #33332f;
+        --bg: #121211; --card: #1a1a19; --raised: #222220;
+        --neg: #e66767; --neu: #5f5e58; --pos: #3987e5;
+        --neg-soft: #3a2221; --pos-soft: #1d2b3d; --neu-soft: #2a2a27;
+        --link: #86b6ef; --star: #eda100;
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9990; --line: #33332f;
+      --bg: #121211; --card: #1a1a19; --raised: #222220;
+      --neg: #e66767; --neu: #5f5e58; --pos: #3987e5;
+      --neg-soft: #3a2221; --pos-soft: #1d2b3d; --neu-soft: #2a2a27;
+      --link: #86b6ef; --star: #eda100;
+    }
+    * { box-sizing: border-box; }
+    body { overflow-x: hidden; margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    a { color: var(--link); }
+    header { background: var(--head); color: #fff; padding: 28px 16px 26px; }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .kicker { color: var(--brand); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+    h1 { margin: 8px 0 6px; font-size: 28px; font-weight: 650; }
+    .sub { color: #c9cdd3; font-size: 14px; }
+    main { padding: 0 16px 48px; }
+    section { margin-top: 22px; }
+    h2 { font-size: 18px; margin: 0 0 10px; }
+    .panel { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+    .summary p { margin: 0 0 10px; line-height: 1.55; }
+    .summary p:last-child { margin-bottom: 0; }
+    .note { color: var(--muted); font-size: 14px; }
+    .problems { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 12px; }
+    .problem { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; border-top: 3px solid var(--neg); }
+    .problem h3 { margin: 0; font-size: 15px; display: flex; justify-content: space-between; gap: 10px; }
+    .problem h3 span { color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+    .problem p { margin: 6px 0 8px; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+    .problem ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+    .problem li { margin: 4px 0; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .chip { font-size: 12px; border-radius: 999px; padding: 2px 9px; background: var(--neu-soft); color: var(--ink-2); }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(160px, 100%), 1fr)); gap: 12px; }
+    .tile { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+    .tile .v { font-size: 28px; font-weight: 700; }
+    .tile .l { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+    .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 12px; margin-top: 12px; }
+    .chart h3 { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); font-weight: 600; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .s-negative { background: var(--neg); }
+    .s-neutral { background: var(--neu); }
+    .s-positive { background: var(--pos); }
+    .hrow { display: grid; grid-template-columns: 112px 1fr 44px; gap: 10px; align-items: center; margin: 8px 0; font-size: 13px; }
+    .hrow .name { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hrow .num { color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+    .bar { display: flex; gap: 2px; height: 16px; }
+    .bar .seg { height: 100%; min-width: 3px; }
+    .bar .seg:last-child { border-radius: 0 4px 4px 0; }
+    .bar.empty { background: var(--neu-soft); border-radius: 0 4px 4px 0; }
+    .cols { display: flex; align-items: flex-end; gap: 4px; height: 160px; border-bottom: 1px solid var(--line); padding-top: 6px; }
+    .col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; height: 100%; justify-content: flex-start; min-width: 0; }
+    .col .seg { width: 100%; }
+    .col .seg:last-child { border-radius: 4px 4px 0 0; }
+    .col-labels { display: flex; gap: 4px; font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .col-labels span { flex: 1; text-align: center; overflow: visible; white-space: nowrap; min-width: 0; display: flex; justify-content: center; }
+    .hit { cursor: default; }
+    #tip { position: fixed; pointer-events: none; background: var(--raised); color: var(--ink); border: 1px solid var(--line);
+      border-radius: 8px; padding: 6px 9px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.18); display: none; z-index: 10; white-space: pre; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; padding: 10px; }
+    .seg-ctl { display: flex; background: var(--bg); border-radius: 18px; padding: 4px; flex-wrap: wrap; max-width: 100%; }
+    .seg-ctl button { border: 0; background: transparent; padding: 7px 13px; border-radius: 999px; cursor: pointer; font: inherit; color: var(--ink-2); }
+    .seg-ctl button.active { background: var(--brand); color: #fff; }
+    .seg-ctl .count { opacity: .8; font-size: 12px; margin-left: 4px; }
+    .check { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+    input[type="search"] { flex: 1; min-width: 180px; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px;
+      font: inherit; background: var(--raised); color: var(--ink); }
+    .stats { color: var(--muted); font-size: 13px; width: 100%; padding: 0 4px; }
+    .item { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 10px 0; }
+    .item.irrelevant { opacity: .6; }
+    .meta { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+    .who { font-weight: 700; }
+    .when { color: var(--muted); font-size: 13px; }
+    .place { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .badge { font-size: 12px; border-radius: 999px; padding: 3px 10px; background: var(--neu-soft); color: var(--ink-2); }
+    .badge.src { font-weight: 700; }
+    .badge.negative { background: var(--neg-soft); color: var(--ink); box-shadow: inset 3px 0 0 var(--neg); }
+    .badge.neutral { background: var(--neu-soft); color: var(--ink); box-shadow: inset 3px 0 0 var(--neu); }
+    .badge.positive { background: var(--pos-soft); color: var(--ink); box-shadow: inset 3px 0 0 var(--pos); }
+    .stars { color: var(--star); letter-spacing: 1px; }
+    .gist { color: var(--ink-2); font-style: italic; font-size: 14px; margin-top: 8px; }
+    .quote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--muted); font-size: 13px; margin-top: 8px; white-space: pre-wrap; }
+    .text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; margin-top: 8px; }
+    .foot { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 8px; }
+    .table-wrap { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--ink-2); font-weight: 600; font-size: 12px; white-space: nowrap; }
+    td.nw { white-space: nowrap; }
+    tr.row-negative td:first-child { box-shadow: inset 3px 0 0 var(--neg); }
+    tr.row-neutral td:first-child { box-shadow: inset 3px 0 0 var(--neu); }
+    tr.row-positive td:first-child { box-shadow: inset 3px 0 0 var(--pos); }
+    tr.row-irrelevant { color: var(--muted); }
+    .empty { text-align: center; padding: 40px 16px; color: var(--muted); }
+    @media (max-width: 560px) { .hrow { grid-template-columns: 84px 1fr 36px; } h1 { font-size: 23px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="kicker">NarxozScraper</div>
+      <h1>\u041D\u0430\u0440\u0445\u043E\u0437 \xB7 2\u0413\u0418\u0421 \u0438 Threads</h1>
+      <div class="sub" id="generated"></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <section>
+      <h2>\u041E\u0431\u0449\u0438\u0439 \u0430\u043D\u0430\u043B\u0438\u0437</h2>
+      <div class="panel summary" id="summary"></div>
+    </section>
+    <section>
+      <h2>\u0413\u043B\u0430\u0432\u043D\u044B\u0435 \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u044B</h2>
+      <div class="problems" id="problems"></div>
+    </section>
+    <section>
+      <h2>\u0426\u0438\u0444\u0440\u044B \u0437\u0430 \u043F\u0435\u0440\u0438\u043E\u0434</h2>
+      <div class="tiles" id="tiles"></div>
+      <div class="charts">
+        <div class="panel chart"><h3>\u0422\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043F\u043E \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430\u043C</h3><div class="legend" data-legend></div><div id="bySource"></div></div>
+        <div class="panel chart"><h3 id="timelineTitle">\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \u043F\u043E \u0434\u043D\u044F\u043C</h3><div class="legend" data-legend></div><div id="timeline"></div></div>
+        <div class="panel chart"><h3>\u0427\u0430\u0441\u0442\u044B\u0435 \u0442\u0435\u043C\u044B</h3><div class="legend" data-legend></div><div id="topics"></div></div>
+      </div>
+    </section>
+    <section>
+      <h2>\u0412\u0441\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F</h2>
+      <div class="toolbar">
+        <div class="seg-ctl" id="sources">
+          <button data-v="" class="active" type="button">\u0412\u0441\u0435</button>
+          <button data-v="2gis" type="button">2\u0413\u0418\u0421<span class="count"></span></button>
+          <button data-v="threads" type="button">Threads<span class="count"></span></button>
+        </div>
+        <div class="seg-ctl" id="sentiments">
+          <button data-v="" class="active" type="button">\u041B\u044E\u0431\u0430\u044F</button>
+          <button data-v="negative" type="button">\u041D\u0435\u0433\u0430\u0442\u0438\u0432<span class="count"></span></button>
+          <button data-v="neutral" type="button">\u041D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E<span class="count"></span></button>
+          <button data-v="positive" type="button">\u041F\u043E\u0437\u0438\u0442\u0438\u0432<span class="count"></span></button>
+        </div>
+        <div class="seg-ctl" id="views">
+          <button data-v="feed" class="active" type="button">\u041B\u0435\u043D\u0442\u0430</button>
+          <button data-v="table" type="button">\u0422\u0430\u0431\u043B\u0438\u0446\u0430</button>
+        </div>
+        <label class="check"><input id="irrelevant" type="checkbox"> \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u043D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0435</label>
+        <input id="q" type="search" placeholder="\u041F\u043E\u0438\u0441\u043A \u043F\u043E \u0442\u0435\u043A\u0441\u0442\u0443, \u0430\u0432\u0442\u043E\u0440\u0443, \u0442\u0435\u043C\u0430\u043C">
+        <div class="stats" id="stats"></div>
+      </div>
+      <div id="feed"></div>
+    </section>
+  </main>
+  <div id="tip" role="tooltip"></div>
+  <script>
+    const DATA = __PAYLOAD__;
+    const LABEL = { negative: "\u041D\u0435\u0433\u0430\u0442\u0438\u0432", neutral: "\u041D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E", positive: "\u041F\u043E\u0437\u0438\u0442\u0438\u0432" };
+    const SOURCE = { "2gis": "2\u0413\u0418\u0421", threads: "Threads" };
+    const ORDER = ["negative", "neutral", "positive"];
+    const state = { source: "", sentiment: "", view: "feed" };
+
+    function esc(text) {
+      return String(text == null ? "" : text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    }
+    function when(value) {
+      const dt = value ? new Date(value) : null;
+      if (!dt || Number.isNaN(dt.getTime())) return "";
+      return dt.toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short", timeZone: DATA.timezone });
+    }
+    function pct(part, total) { return total ? Math.round(part * 100 / total) + "%" : "\u2014"; }
+    function sum(c) { return c.negative + c.neutral + c.positive; }
+    function tipText(title, c) {
+      return title + "\\n" + ORDER.map(function (k) { return LABEL[k] + ": " + c[k]; }).join("\\n");
+    }
+
+    // Header and LLM overview
+    document.getElementById("generated").textContent =
+      "\u041F\u0435\u0440\u0438\u043E\u0434: " + DATA.period_label + " \xB7 \u043E\u0431\u043D\u043E\u0432\u043B\u0435\u043D\u043E " + when(DATA.generated_at) +
+      (DATA.overview.model ? " \xB7 \u0430\u043D\u0430\u043B\u0438\u0437: " + DATA.overview.model : "") +
+      (DATA.threads_connected ? "" : " \xB7 \u0434\u0430\u043D\u043D\u044B\u0435 Threads \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B");
+    const ov = DATA.overview;
+    document.getElementById("summary").innerHTML = ov.summary
+      ? ov.summary.split(/\\n\\s*\\n/).map(function (p) { return "<p>" + esc(p.trim()) + "</p>"; }).join("")
+      : '<p class="note">' + esc(ov.note || "\u041D\u0435\u0442 \u0441\u0432\u043E\u0434\u043A\u0438.") + "</p>";
+    const byId = {};
+    DATA.items.forEach(function (item) { byId[item.id] = item; });
+    document.getElementById("problems").innerHTML = ov.problems.length
+      ? ov.problems.map(function (p) {
+          const examples = p.example_ids.map(function (id) { return byId[id]; }).filter(Boolean).map(function (item) {
+            return '<li><a href="' + esc(item.url) + '" target="_blank" rel="noopener">' + esc(SOURCE[item.source]) + "</a> \u2014 " +
+              esc((item.summary || item.text).slice(0, 140)) + "</li>";
+          }).join("");
+          return '<div class="problem"><h3>' + esc(p.title) + "<span>" + p.count + " \u0443\u043F\u043E\u043C.</span></h3>" +
+            (p.description ? "<p>" + esc(p.description) + "</p>" : "") +
+            (examples ? "<ul>" + examples + "</ul>" : "") +
+            '<div class="chips">' + p.sources.map(function (s) { return '<span class="chip">' + esc(SOURCE[s]) + "</span>"; }).join("") + "</div></div>";
+        }).join("")
+      : '<div class="panel note">\u041D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439 \u0437\u0430 \u043F\u0435\u0440\u0438\u043E\u0434 \u043D\u0435\u0442.</div>';
+
+    // Numbers
+    const st = DATA.stats;
+    const tiles = [
+      [st.relevant, "\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439"],
+      [pct(st.sentiment.negative, st.relevant), "\u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 (" + st.sentiment.negative + ")"],
+      [st.avg_rating_2gis == null ? "\u2014" : "\u2605 " + st.avg_rating_2gis, "\u0441\u0440\u0435\u0434\u043D\u044F\u044F \u043E\u0446\u0435\u043D\u043A\u0430 \u0432 2\u0413\u0418\u0421"],
+      [st.by_source["2gis"].total + " / " + st.by_source.threads.total, "\u043E\u0442\u0437\u044B\u0432\u043E\u0432 2\u0413\u0418\u0421 / \u043F\u043E\u0441\u0442\u043E\u0432 Threads"],
+    ];
+    document.getElementById("tiles").innerHTML = tiles.map(function (t) {
+      return '<div class="tile"><div class="v">' + esc(t[0]) + '</div><div class="l">' + esc(t[1]) + "</div></div>";
+    }).join("");
+    document.querySelectorAll("[data-legend]").forEach(function (el) {
+      el.innerHTML = ORDER.map(function (k) { return '<span><i class="s-' + k + '"></i>' + LABEL[k] + "</span>"; }).join("");
+    });
+    function hbar(name, c, scaleTotal) {
+      const total = sum(c);
+      const width = scaleTotal ? Math.max(total / scaleTotal * 100, total ? 2 : 0) : 100;
+      const segs = ORDER.filter(function (k) { return c[k]; }).map(function (k) {
+        return '<div class="seg s-' + k + '" style="flex:' + c[k] + '"></div>';
+      }).join("");
+      return '<div class="hrow hit" data-tip="' + esc(tipText(name, c)) + '"><div class="name" title="' + esc(name) + '">' + esc(name) + "</div>" +
+        '<div><div class="bar' + (total ? "" : " empty") + '" style="width:' + width + '%">' + segs + "</div></div>" +
+        '<div class="num">' + total + "</div></div>";
+    }
+    document.getElementById("bySource").innerHTML = ["2gis", "threads"].map(function (s) {
+      return hbar(SOURCE[s], st.by_source[s], 0);
+    }).join("") + '<div class="note" style="margin-top:8px">\u0414\u043E\u043B\u0438 \u0432\u043D\u0443\u0442\u0440\u0438 \u0438\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0430; \u0441\u043F\u0440\u0430\u0432\u0430 \u2014 \u0447\u0438\u0441\u043B\u043E \u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445.</div>';
+    const peak = Math.max.apply(null, st.timeline.map(function (b) { return sum(b.counts); }).concat([1]));
+    if (st.timeline.length && st.timeline[0].unit === "week") document.getElementById("timelineTitle").textContent = "\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \u043F\u043E \u043D\u0435\u0434\u0435\u043B\u044F\u043C";
+    const every = Math.ceil(st.timeline.length / 6);
+    document.getElementById("timeline").innerHTML = st.timeline.length
+      ? '<div class="cols">' + st.timeline.map(function (b) {
+          const segs = ORDER.filter(function (k) { return b.counts[k]; }).map(function (k) {
+            return '<div class="seg s-' + k + '" style="height:' + (b.counts[k] / peak * 100) + '%"></div>';
+          }).join("");
+          return '<div class="col hit" data-tip="' + esc(tipText(b.label, b.counts)) + '">' + segs + "</div>";
+        }).join("") + '</div><div class="col-labels">' + st.timeline.map(function (b, i) {
+          return "<span>" + (i % every === 0 ? esc(b.label.slice(5)) : "") + "</span>";
+        }).join("") + "</div>"
+      : '<div class="note">\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445.</div>';
+    const topMax = Math.max.apply(null, st.topics.map(function (t) { return t.total; }).concat([1]));
+    document.getElementById("topics").innerHTML = st.topics.length
+      ? st.topics.map(function (t) { return hbar(t.topic, t.counts, topMax); }).join("")
+      : '<div class="note">\u0422\u0435\u043C\u044B \u043F\u043E\u044F\u0432\u044F\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435 LLM-\u0430\u043D\u0430\u043B\u0438\u0437\u0430.</div>';
+
+    // Hover layer: one tooltip for every mark carrying data-tip
+    const tip = document.getElementById("tip");
+    document.addEventListener("mousemove", function (e) {
+      const hit = e.target.closest ? e.target.closest("[data-tip]") : null;
+      if (!hit) { tip.style.display = "none"; return; }
+      tip.textContent = hit.getAttribute("data-tip");
+      tip.style.display = "block";
+      const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+      tip.style.left = x + "px";
+      tip.style.top = (e.clientY + 14) + "px";
+    });
+
+    // Mentions
+    const feed = document.getElementById("feed");
+    const stats = document.getElementById("stats");
+    const search = document.getElementById("q");
+    const showIrrelevant = document.getElementById("irrelevant");
+    function stars(r) { return r ? '<span class="stars" title="' + r + ' \u0438\u0437 5">' + "\u2605".repeat(r) + "\u2606".repeat(5 - r) + "</span>" : ""; }
+    function badges(item) {
+      const head = item.relevant === false ? '<span class="badge">\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439</span>'
+        : item.sentiment ? '<span class="badge ' + item.sentiment + '">' + LABEL[item.sentiment] + "</span>"
+        : '<span class="badge">\u0411\u0435\u0437 \u0430\u043D\u0430\u043B\u0438\u0437\u0430</span>';
+      return '<div class="badges"><span class="badge src">' + SOURCE[item.source] + "</span>" + head +
+        item.topics.map(function (t) { return '<span class="badge">' + esc(t) + "</span>"; }).join("") + "</div>";
+    }
+    function card(item) {
+      return '<article class="item' + (item.relevant === false ? " irrelevant" : "") + '">' +
+        '<div class="meta"><div class="who">' + esc(item.author || "\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438") + " " + stars(item.rating) + "</div>" +
+        '<div class="when">' + esc(when(item.published_at)) + "</div></div>" +
+        '<div class="place">' + esc(item.place) + "</div>" + badges(item) +
+        (item.summary ? '<div class="gist">' + esc(item.summary) + "</div>" : "") +
+        (item.reply_to ? '<div class="quote">' + esc(item.reply_to.slice(0, 400)) + "</div>" : "") +
+        '<div class="text">' + esc(item.text) + "</div>" +
+        '<div class="foot">' + (item.source === "2gis" ? "<span>" + (item.org_answered ? "\u2713 \u0435\u0441\u0442\u044C \u043E\u0442\u0432\u0435\u0442 \u041D\u0430\u0440\u0445\u043E\u0437\u0430" : "\u0431\u0435\u0437 \u043E\u0442\u0432\u0435\u0442\u0430 \u041D\u0430\u0440\u0445\u043E\u0437\u0430") + "</span>" : "") +
+        '<a href="' + esc(item.url) + '" target="_blank" rel="noopener">\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0432 ' + SOURCE[item.source] + "</a></div></article>";
+    }
+    function table(items) {
+      return '<div class="table-wrap"><table><thead><tr><th>\u0414\u0430\u0442\u0430</th><th>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th>\u0410\u0432\u0442\u043E\u0440 / \u043C\u0435\u0441\u0442\u043E</th><th>\u2605</th>' +
+        "<th>\u0422\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C</th><th>\u0422\u0435\u043C\u044B</th><th>\u0421\u0443\u0442\u044C / \u0442\u0435\u043A\u0441\u0442</th><th></th></tr></thead><tbody>" +
+        items.map(function (item) {
+          const kind = item.relevant === false ? "irrelevant" : (item.sentiment || "");
+          const label = item.relevant === false ? "\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439" : (LABEL[item.sentiment] || "\u2014");
+          return '<tr class="row-' + kind + '"><td class="nw">' + esc(when(item.published_at)) + "</td><td>" + SOURCE[item.source] + "</td>" +
+            "<td>" + esc(item.author) + "<br><span class=\\"when\\">" + esc(item.place) + "</span></td><td>" + (item.rating || "\u2014") + "</td>" +
+            "<td>" + label + "</td><td>" + esc(item.topics.join(", ")) + "</td>" +
+            "<td>" + esc(item.summary || item.text.slice(0, 220)) + "</td>" +
+            '<td><a href="' + esc(item.url) + '" target="_blank" rel="noopener">\u043E\u0442\u043A\u0440\u044B\u0442\u044C</a></td></tr>';
+        }).join("") + "</tbody></table></div>";
+    }
+    function render() {
+      const needle = search.value.trim().toLowerCase();
+      const base = DATA.items.filter(function (item) {
+        if (!showIrrelevant.checked && item.relevant === false) return false;
+        if (!needle) return true;
+        return [item.author, item.place, item.text, item.summary, item.topics.join(" "), item.reply_to].join(" ").toLowerCase().includes(needle);
+      });
+      document.querySelectorAll("#sources button").forEach(function (b) {
+        const c = b.querySelector(".count");
+        if (c) c.textContent = base.filter(function (i) { return i.source === b.dataset.v; }).length;
+      });
+      const bySource = base.filter(function (i) { return !state.source || i.source === state.source; });
+      document.querySelectorAll("#sentiments button").forEach(function (b) {
+        const c = b.querySelector(".count");
+        if (c) c.textContent = bySource.filter(function (i) { return i.relevant !== false && i.sentiment === b.dataset.v; }).length;
+      });
+      const items = bySource.filter(function (i) { return !state.sentiment || (i.relevant !== false && i.sentiment === state.sentiment); });
+      stats.textContent = "\u041F\u043E\u043A\u0430\u0437\u0430\u043D\u043E: " + items.length + " \u0438\u0437 " + DATA.items.length + " \u0437\u0430 \u043F\u0435\u0440\u0438\u043E\u0434";
+      if (!items.length) { feed.innerHTML = '<div class="empty">\u041D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u043E \u2014 \u0441\u043C\u0435\u043D\u0438\u0442\u0435 \u0444\u0438\u043B\u044C\u0442\u0440\u044B.</div>'; return; }
+      feed.innerHTML = state.view === "table" ? table(items) : items.map(card).join("");
+    }
+    function segment(id, key) {
+      document.querySelectorAll("#" + id + " button").forEach(function (button) {
+        button.onclick = function () {
+          state[key] = button.dataset.v;
+          document.querySelectorAll("#" + id + " button").forEach(function (b) { b.classList.toggle("active", b === button); });
+          render();
+        };
+      });
+    }
+    segment("sources", "source");
+    segment("sentiments", "sentiment");
+    segment("views", "view");
+    search.oninput = render;
+    showIrrelevant.onchange = render;
+    render();
+  </script>
+</body>
+</html>
+`;
+function renderReport(payload) {
+  const json2 = JSON.stringify(payload).replace(/</g, "\\u003c");
+  return TEMPLATE2.replace("__PAYLOAD__", () => json2);
+}
+
+// src/report/overview.ts
+import { createHash as createHash2 } from "node:crypto";
+import { existsSync as existsSync4, readFileSync as readFileSync4, writeFileSync as writeFileSync4 } from "node:fs";
+import { join as join4 } from "node:path";
+
+// src/scraper/analyze.ts
+import { createHash } from "node:crypto";
+var FALLBACK_MODEL = "rating-fallback";
+var TIMEOUT_MS = 12e4;
+var CONCURRENCY = 4;
+var MAX_TEXT = 2e3;
+var DEFAULT_RELEVANCE = [
+  "\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432 \u2014 \u0442\u043E\u0442, \u0438\u0437 \u043A\u043E\u0442\u043E\u0440\u043E\u0433\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F \u0443\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0430 \u043C\u043E\u0436\u0435\u0442 \u0447\u0442\u043E-\u0442\u043E \u0443\u0437\u043D\u0430\u0442\u044C \u0438\u043B\u0438 \u0447\u0442\u043E-\u0442\u043E \u0438\u0441\u043F\u0440\u0430\u0432\u0438\u0442\u044C:",
+  "\u0443\u0447\u0451\u0431\u0430 \u0438 \u043A\u0430\u0447\u0435\u0441\u0442\u0432\u043E \u043F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u043D\u0438\u044F, \u043F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u0442\u0435\u043B\u0438 \u0438 \u043A\u0443\u0440\u0430\u0442\u043E\u0440\u044B, \u0434\u0435\u043A\u0430\u043D\u0430\u0442 \u0438 \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u044F, \u043F\u0440\u0438\u0451\u043C\u043D\u0430\u044F \u043A\u043E\u043C\u0438\u0441\u0441\u0438\u044F \u0438 \u043F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435,",
+  "\u043E\u043F\u043B\u0430\u0442\u0430, \u0441\u0442\u0438\u043F\u0435\u043D\u0434\u0438\u0438 \u0438 \u0433\u0440\u0430\u043D\u0442\u044B, \u043E\u0431\u0449\u0435\u0436\u0438\u0442\u0438\u0435, \u0441\u0442\u043E\u043B\u043E\u0432\u0430\u044F, \u0437\u0434\u0430\u043D\u0438\u044F \u0438 \u0438\u043D\u0444\u0440\u0430\u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0430, Wi-Fi, \u0431\u0438\u0431\u043B\u0438\u043E\u0442\u0435\u043A\u0430, \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u044C,",
+  "\u043E\u0445\u0440\u0430\u043D\u0430 \u0438 \u043F\u0440\u043E\u043F\u0443\u0441\u043A\u043D\u043E\u0439 \u0440\u0435\u0436\u0438\u043C, \u043E\u0442\u043D\u043E\u0448\u0435\u043D\u0438\u0435 \u043F\u0435\u0440\u0441\u043E\u043D\u0430\u043B\u0430, \u0440\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435, \u0442\u0440\u0443\u0434\u043E\u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E, \u0441\u0442\u0443\u0434\u0435\u043D\u0447\u0435\u0441\u043A\u0430\u044F \u0436\u0438\u0437\u043D\u044C.",
+  "\u041F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432 \u0441 \u043A\u043E\u043D\u043A\u0440\u0435\u0442\u0438\u043A\u043E\u0439 (\u0447\u0442\u043E \u0438\u043C\u0435\u043D\u043D\u043E \u043F\u043E\u043D\u0440\u0430\u0432\u0438\u043B\u043E\u0441\u044C) \u0442\u043E\u0436\u0435 \u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u0435\u043D.",
+  "\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432: \u0441\u043F\u0430\u043C \u0438 \u0440\u0435\u043A\u043B\u0430\u043C\u0430, \u0431\u0435\u0441\u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0442\u0435\u043A\u0441\u0442 (\xAB\u043D\u043E\u0440\u043C\xBB, \xAB\u043E\u043A\xBB, \u043E\u0434\u043D\u0438 \u0441\u043C\u0430\u0439\u043B\u044B), \u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0437\u044B\u0432 \u0441 \u043E\u0434\u043D\u043E\u0439 \u043E\u0446\u0435\u043D\u043A\u043E\u0439,",
+  "\u043E\u0442\u0437\u044B\u0432 \u044F\u0432\u043D\u043E \u043D\u0435 \u043E \u041D\u0430\u0440\u0445\u043E\u0437\u0435 (\u043E \u0434\u0440\u0443\u0433\u043E\u0439 \u043E\u0440\u0433\u0430\u043D\u0438\u0437\u0430\u0446\u0438\u0438 \u0438\u043B\u0438 \u043E\u0448\u0438\u0431\u043E\u0447\u043D\u043E \u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 \u043D\u0435 \u0432 \u0442\u043E\u0439 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0435), \u043E\u0441\u043A\u043E\u0440\u0431\u043B\u0435\u043D\u0438\u044F \u0431\u0435\u0437 \u0441\u0443\u0442\u0438,",
+  "\u043E\u0442\u0437\u044B\u0432 \u043E \u043F\u0430\u0440\u043A\u043E\u0432\u043A\u0435 \u0438\u043B\u0438 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0435 \u043F\u043E\u0431\u043B\u0438\u0437\u043E\u0441\u0442\u0438, \u043D\u0435 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0445 \u0441 \u0443\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u043E\u043C."
+].join(" ");
+var ItemSchema = external_exports.object({
+  id: external_exports.coerce.string(),
+  relevant: external_exports.boolean(),
+  sentiment: external_exports.enum(["positive", "neutral", "negative"]),
+  topics: external_exports.array(external_exports.string()).default([]),
+  summary: external_exports.string().default("")
+});
+var ResponseSchema = external_exports.object({ items: external_exports.array(ItemSchema) });
+function textHash(review) {
+  return createHash("sha1").update(review.text || "").digest("hex");
+}
+function llmKey(llm) {
+  return (process.env[llm.api_key_env || "OPENROUTER_API_KEY"] || "").trim();
+}
+function llmReady(llm) {
+  return Boolean(llm.enabled && llm.model && llm.base_url && llmKey(llm));
+}
+function ratingSentiment(rating) {
+  if (!rating) return "neutral";
+  return rating >= 4 ? "positive" : rating <= 2 ? "negative" : "neutral";
+}
+function fallback(review) {
+  return {
+    relevant: true,
+    sentiment: ratingSentiment(review.rating),
+    topics: [],
+    summary: "",
+    model: FALLBACK_MODEL,
+    text_hash: textHash(review),
+    analyzed_at: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function needsAnalysis(review, useLlm, force) {
+  const current = review.analysis;
+  if (force || !current) return true;
+  if (current.text_hash !== textHash(review)) return true;
+  return useLlm && current.model === FALLBACK_MODEL;
+}
+function systemPrompt(llm) {
+  return [
+    "\u0422\u044B \u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u0443\u0435\u0448\u044C \u043E\u0442\u0437\u044B\u0432\u044B \u0438\u0437 2\u0413\u0418\u0421 \u043E\u0431 \u0423\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0435 \u041D\u0430\u0440\u0445\u043E\u0437 (\u0410\u043B\u043C\u0430\u0442\u044B) \u0434\u043B\u044F \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0443\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0430.",
+    llm.relevance_prompt.trim() || DEFAULT_RELEVANCE,
+    "\u0414\u043B\u044F \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u043E\u0442\u0437\u044B\u0432\u0430 \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438:",
+    "relevant \u2014 true/false \u043F\u043E \u043F\u0440\u0430\u0432\u0438\u043B\u0430\u043C \u0432\u044B\u0448\u0435;",
+    'sentiment \u2014 "positive", "neutral" \u0438\u043B\u0438 "negative" \u043F\u043E \u0441\u043C\u044B\u0441\u043B\u0443 \u0442\u0435\u043A\u0441\u0442\u0430 (\u0437\u0432\u0451\u0437\u0434\u044B \u2014 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0430, \u043D\u043E \u0442\u0435\u043A\u0441\u0442 \u0432\u0430\u0436\u043D\u0435\u0435; \u0441\u043C\u0435\u0448\u0430\u043D\u043D\u044B\u0439 \u043E\u0442\u0437\u044B\u0432 \u0431\u0435\u0437 \u044F\u0432\u043D\u043E\u0433\u043E \u043F\u0435\u0440\u0435\u0432\u0435\u0441\u0430 \u2014 "neutral");',
+    "topics \u2014 1\u20133 \u043A\u043E\u0440\u043E\u0442\u043A\u0438\u0445 \u0442\u0435\u043C\u044B \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C \u0432 \u043D\u0438\u0436\u043D\u0435\u043C \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0435 (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440 \xAB\u043E\u0431\u0449\u0435\u0436\u0438\u0442\u0438\u0435\xBB, \xAB\u043F\u0440\u0435\u043F\u043E\u0434\u0430\u0432\u0430\u0442\u0435\u043B\u0438\xBB, \xAB\u043E\u043F\u043B\u0430\u0442\u0430\xBB), \u043F\u0443\u0441\u0442\u043E\u0439 \u043C\u0430\u0441\u0441\u0438\u0432 \u0434\u043B\u044F \u043D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445;",
+    "summary \u2014 \u0441\u0443\u0442\u044C \u043E\u0442\u0437\u044B\u0432\u0430 \u043E\u0434\u043D\u043E\u0439 \u0444\u0440\u0430\u0437\u043E\u0439 \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C, \u0434\u043E 160 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432.",
+    '\u041E\u0442\u0432\u0435\u0442\u044C \u0442\u043E\u043B\u044C\u043A\u043E JSON \u0432\u0438\u0434\u0430 {"items":[{"id":"...","relevant":true,"sentiment":"negative","topics":["..."],"summary":"..."}]} \u2014 \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u0443 \u043D\u0430 \u043A\u0430\u0436\u0434\u044B\u0439 \u043E\u0442\u0437\u044B\u0432, id \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439.'
+  ].join("\n");
+}
+function userPrompt(batch) {
+  const items = batch.map((review) => ({
+    id: review.id,
+    branch: review.branch_name,
+    stars: review.rating,
+    text: (review.text || "").slice(0, MAX_TEXT),
+    org_reply: review.replies.find((reply) => reply.from_org)?.text.slice(0, 500) || void 0
+  }));
+  return JSON.stringify({ reviews: items });
+}
+function extractJson(content) {
+  const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = (fenced ? fenced[1] : content).trim();
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  return JSON.parse(start >= 0 && end > start ? raw.slice(start, end + 1) : raw);
+}
+async function chatJson(llm, key, system, user, timeoutMs = TIMEOUT_MS) {
+  const response = await fetch(`${llm.base_url.replace(/\/+$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      // OpenRouter attribution headers; other OpenAI-compatible endpoints ignore them.
+      "HTTP-Referer": "https://github.com/deyrann00/NarxozScraper",
+      "X-Title": "NarxozScraper"
+    },
+    body: JSON.stringify({
+      model: llm.model,
+      temperature: llm.temperature,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user }
+      ]
+    }),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${body.slice(0, 300)}`);
+  }
+  const content = JSON.parse(body)?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content.trim()) {
+    throw new Error(`empty completion: ${body.slice(0, 300)}`);
+  }
+  return extractJson(content);
+}
+async function classifyBatch(llm, key, batch) {
+  return ResponseSchema.parse(await chatJson(llm, key, systemPrompt(llm), userPrompt(batch))).items;
+}
+async function analyzeReviews(root, options = {}) {
+  const { llm } = loadConfig(root);
+  const useLlm = llmReady(llm);
+  const key = llmKey(llm);
+  const errors2 = [];
+  const [reviews] = mergeReviews(loadExisting(root), []);
+  const scope = options.hours && options.hours > 0 ? lookbackReviews(reviews, options.hours) : reviews;
+  const pending = scope.filter((review) => needsAnalysis(review, useLlm, Boolean(options.force)));
+  let analyzed = 0;
+  if (!useLlm) {
+    for (const review of pending) {
+      review.analysis = fallback(review);
+      analyzed += 1;
+    }
+    if (llm.enabled && !key && pending.length) {
+      errors2.push(`LLM: \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u0430\u044F ${llm.api_key_env} \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430 \u2014 \u0442\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0430 \u043F\u043E \u0437\u0432\u0451\u0437\u0434\u0430\u043C`);
+    }
+  } else {
+    const size = Math.max(1, Math.min(llm.batch_size || 20, 50));
+    const batches = [];
+    for (let i = 0; i < pending.length; i += size) {
+      batches.push(pending.slice(i, i + size));
+    }
+    let next = 0;
+    const worker = async () => {
+      while (next < batches.length) {
+        const batch = batches[next++];
+        let items = null;
+        for (let attempt = 1; attempt <= 2 && !items; attempt += 1) {
+          try {
+            items = await classifyBatch(llm, key, batch);
+          } catch (err) {
+            if (attempt === 2) {
+              const ids2 = `${batch[0].id}\u2026${batch[batch.length - 1].id}`;
+              errors2.push(`LLM batch ${ids2}: ${err instanceof Error ? err.message : String(err)}`);
+            }
+          }
+        }
+        if (!items) continue;
+        const byId = new Map(items.map((item) => [item.id, item]));
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        for (const review of batch) {
+          const item = byId.get(review.id);
+          if (!item) continue;
+          review.analysis = {
+            relevant: item.relevant,
+            sentiment: item.sentiment,
+            topics: item.topics.slice(0, 5),
+            summary: item.summary.slice(0, 300),
+            model: llm.model,
+            text_hash: textHash(review),
+            analyzed_at: now
+          };
+          analyzed += 1;
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, batches.length) }, worker));
+  }
+  if (analyzed) {
+    saveReviews(root, reviews);
+  }
+  const by_sentiment = { positive: 0, neutral: 0, negative: 0 };
+  let relevant = 0;
+  let irrelevant = 0;
+  for (const review of scope) {
+    if (!review.analysis) continue;
+    if (review.analysis.relevant) {
+      relevant += 1;
+      by_sentiment[review.analysis.sentiment] += 1;
+    } else {
+      irrelevant += 1;
+    }
+  }
+  return {
+    model: useLlm ? llm.model : FALLBACK_MODEL,
+    analyzed,
+    skipped_cached: scope.length - pending.length,
+    total: scope.length,
+    relevant,
+    irrelevant,
+    by_sentiment,
+    errors: errors2
+  };
+}
+
+// src/report/overview.ts
+var SOURCES = ["2gis", "threads"];
+var MAX_ITEMS = 250;
+var zero = () => ({ negative: 0, neutral: 0, positive: 0 });
+function localDate(iso, timezone) {
+  return new Date(iso).toLocaleDateString("sv-SE", { timeZone: timezone });
+}
+function monday(day) {
+  const date3 = /* @__PURE__ */ new Date(`${day}T00:00:00Z`);
+  date3.setUTCDate(date3.getUTCDate() - (date3.getUTCDay() + 6) % 7);
+  return date3.toISOString().slice(0, 10);
+}
+function computeStats(items, hours, timezone) {
+  const blank = () => ({ ...zero(), total: 0, relevant: 0, irrelevant: 0, not_analyzed: 0 });
+  const stats = {
+    total: items.length,
+    relevant: 0,
+    irrelevant: 0,
+    not_analyzed: 0,
+    sentiment: zero(),
+    by_source: { "2gis": blank(), threads: blank() },
+    avg_rating_2gis: null,
+    timeline: [],
+    topics: []
+  };
+  const unit = hours > 45 * 24 ? "week" : "day";
+  const buckets = /* @__PURE__ */ new Map();
+  if (unit === "day" && hours > 0) {
+    for (let t = Date.now() - hours * 3600 * 1e3; t <= Date.now(); t += 24 * 3600 * 1e3) {
+      buckets.set(localDate(new Date(t).toISOString(), timezone), zero());
+    }
+    buckets.set(localDate((/* @__PURE__ */ new Date()).toISOString(), timezone), buckets.get(localDate((/* @__PURE__ */ new Date()).toISOString(), timezone)) ?? zero());
+  }
+  const topics = /* @__PURE__ */ new Map();
+  let stars = 0;
+  let rated = 0;
+  for (const item of items) {
+    const source = stats.by_source[item.source];
+    source.total += 1;
+    if (item.source === "2gis" && item.rating) {
+      stars += item.rating;
+      rated += 1;
+    }
+    if (item.relevant === null || !item.sentiment) {
+      stats.not_analyzed += 1;
+      source.not_analyzed += 1;
+      continue;
+    }
+    if (!item.relevant) {
+      stats.irrelevant += 1;
+      source.irrelevant += 1;
+      continue;
+    }
+    stats.relevant += 1;
+    source.relevant += 1;
+    stats.sentiment[item.sentiment] += 1;
+    source[item.sentiment] += 1;
+    if (item.published_at && !Number.isNaN(Date.parse(item.published_at))) {
+      const day = localDate(item.published_at, timezone);
+      const key = unit === "week" ? monday(day) : day;
+      const bucket = buckets.get(key) ?? zero();
+      bucket[item.sentiment] += 1;
+      buckets.set(key, bucket);
+    }
+    for (const raw of item.topics) {
+      const topic = raw.trim().toLowerCase();
+      if (!topic) continue;
+      const counts = topics.get(topic) ?? zero();
+      counts[item.sentiment] += 1;
+      topics.set(topic, counts);
+    }
+  }
+  stats.avg_rating_2gis = rated ? Math.round(stars / rated * 10) / 10 : null;
+  stats.timeline = [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([label, counts]) => ({ label, unit, counts }));
+  stats.topics = [...topics.entries()].map(([topic, counts]) => ({ topic, counts, total: counts.negative + counts.neutral + counts.positive })).sort((a, b) => b.total - a.total || b.counts.negative - a.counts.negative).slice(0, 10);
+  return stats;
+}
+function topicProblems(items) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const item of items) {
+    if (!item.relevant || item.sentiment !== "negative") continue;
+    for (const raw of item.topics) {
+      const topic = raw.trim().toLowerCase();
+      if (topic) groups.set(topic, [...groups.get(topic) ?? [], item]);
+    }
+  }
+  return [...groups.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 6).map(([topic, group]) => ({
+    title: topic.charAt(0).toUpperCase() + topic.slice(1),
+    description: "",
+    count: group.length,
+    sources: SOURCES.filter((source) => group.some((item) => item.source === source)),
+    example_ids: group.slice(0, 3).map((item) => item.id)
+  }));
+}
+var OverviewSchema = external_exports.object({
+  summary: external_exports.string(),
+  problems: external_exports.array(
+    external_exports.object({
+      title: external_exports.string(),
+      description: external_exports.string().default(""),
+      count: external_exports.coerce.number().int().min(0).default(0),
+      sources: external_exports.array(external_exports.enum(["2gis", "threads"])).default([]),
+      example_ids: external_exports.array(external_exports.coerce.string()).default([])
+    })
+  ).default([])
+});
+function periodWords(hours) {
+  if (!hours) return "\u0432\u0435\u0441\u044C \u0430\u0440\u0445\u0438\u0432";
+  if (hours % 24 === 0) return hours === 24 ? "\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 \u0441\u0443\u0442\u043A\u0438" : `\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 ${hours / 24} \u0434\u043D.`;
+  return `\u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 ${hours} \u0447`;
+}
+function systemPrompt2(hours) {
+  return [
+    "\u0422\u044B \u0430\u043D\u0430\u043B\u0438\u0442\u0438\u043A, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u0433\u043E\u0442\u043E\u0432\u0438\u0442 \u0434\u043B\u044F \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u0423\u043D\u0438\u0432\u0435\u0440\u0441\u0438\u0442\u0435\u0442\u0430 \u041D\u0430\u0440\u0445\u043E\u0437 (\u0410\u043B\u043C\u0430\u0442\u044B) \u043E\u0431\u0437\u043E\u0440 \u0442\u043E\u0433\u043E, \u0447\u0442\u043E \u043E \u043D\u0451\u043C \u043F\u0438\u0448\u0443\u0442.",
+    `\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A\u0438: \u043E\u0442\u0437\u044B\u0432\u044B 2\u0413\u0418\u0421 \u043E \u0444\u0438\u043B\u0438\u0430\u043B\u0430\u0445 (\u0441\u043E \u0437\u0432\u0451\u0437\u0434\u0430\u043C\u0438) \u0438 \u043F\u043E\u0441\u0442\u044B Threads. \u041F\u0435\u0440\u0438\u043E\u0434: ${periodWords(hours)}.`,
+    "\u0422\u0435\u0431\u0435 \u0434\u0430\u044E\u0442 \u0443\u0436\u0435 \u043E\u0442\u0444\u0438\u043B\u044C\u0442\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \u0441 \u0442\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C\u044E \u0438 \u0442\u0435\u043C\u0430\u043C\u0438.",
+    "\u0412\u0435\u0440\u043D\u0438 JSON:",
+    "summary \u2014 2 \u043A\u043E\u0440\u043E\u0442\u043A\u0438\u0445 \u0430\u0431\u0437\u0430\u0446\u0430 \u043D\u0430 \u0440\u0443\u0441\u0441\u043A\u043E\u043C (\u0440\u0430\u0437\u0434\u0435\u043B\u0435\u043D\u044B \\n\\n): \u043E\u0431\u0449\u0435\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0438\u0435 \u0438 \u0431\u0430\u043B\u0430\u043D\u0441 \u0442\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438, \u0447\u0435\u043C \u043E\u0442\u043B\u0438\u0447\u0430\u044E\u0442\u0441\u044F 2\u0413\u0418\u0421 \u0438 Threads,",
+    "\u0447\u0442\u043E \u0432\u044B\u0434\u0435\u043B\u044F\u0435\u0442\u0441\u044F \u0437\u0430 \u043F\u0435\u0440\u0438\u043E\u0434. \u041E\u043F\u0438\u0440\u0430\u0439\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043D\u0430 \u0434\u0430\u043D\u043D\u044B\u0435, \u0431\u0435\u0437 \u043E\u0431\u0449\u0438\u0445 \u0444\u0440\u0430\u0437 \u0438 \u0431\u0435\u0437 \u0432\u044B\u0434\u0443\u043C\u0430\u043D\u043D\u044B\u0445 \u0446\u0438\u0444\u0440;",
+    "problems \u2014 \u0434\u043E 6 \u0433\u043B\u0430\u0432\u043D\u044B\u0445 \u043F\u0440\u043E\u0431\u043B\u0435\u043C \u043F\u043E \u0443\u0431\u044B\u0432\u0430\u043D\u0438\u044E \u0432\u0430\u0436\u043D\u043E\u0441\u0442\u0438 (\u0447\u0430\u0441\u0442\u043E\u0442\u0430 \u0438 \u0441\u0435\u0440\u044C\u0451\u0437\u043D\u043E\u0441\u0442\u044C). \u0414\u043B\u044F \u043A\u0430\u0436\u0434\u043E\u0439: title (2\u20135 \u0441\u043B\u043E\u0432),",
+    "description (\u043E\u0434\u043D\u043E \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435: \u0432 \u0447\u0451\u043C \u0441\u0443\u0442\u044C \u0438 \u0433\u0434\u0435 \u043F\u0440\u043E\u044F\u0432\u043B\u044F\u0435\u0442\u0441\u044F), count (\u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439 \u043E \u043D\u0435\u0439),",
+    'sources (["2gis"], ["threads"] \u0438\u043B\u0438 \u043E\u0431\u0430), example_ids (1\u20133 id \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439 \u0438\u0437 \u0432\u0445\u043E\u0434\u043D\u044B\u0445 \u0434\u0430\u043D\u043D\u044B\u0445, \u0431\u0435\u0437 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439).',
+    "\u0415\u0441\u043B\u0438 \u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439 \u043D\u0435\u0442, problems \u2014 \u043F\u0443\u0441\u0442\u043E\u0439 \u043C\u0430\u0441\u0441\u0438\u0432.",
+    '\u0424\u043E\u0440\u043C\u0430\u0442: {"summary":"...","problems":[{"title":"...","description":"...","count":3,"sources":["2gis"],"example_ids":["..."]}]}'
+  ].join("\n");
+}
+function userPrompt2(items) {
+  return JSON.stringify({
+    mentions: items.slice(0, MAX_ITEMS).map((item) => ({
+      id: item.id,
+      source: item.source,
+      date: String(item.published_at || "").slice(0, 10),
+      stars: item.rating ?? void 0,
+      sentiment: item.sentiment,
+      topics: item.topics,
+      text: (item.summary || item.text).slice(0, 300)
+    }))
+  });
+}
+function cacheFile(root) {
+  return join4(paths(root).data, "report-overview.json");
+}
+async function buildOverview(root, items, hours, options = {}) {
+  const { llm, report } = loadConfig(root);
+  const relevant = items.filter((item) => item.relevant && item.sentiment);
+  const fallback2 = (note) => ({
+    model: null,
+    summary: "",
+    problems: topicProblems(relevant),
+    generated_at: (/* @__PURE__ */ new Date()).toISOString(),
+    note
+  });
+  if (!relevant.length) return { overview: fallback2("\u0417\u0430 \u043F\u0435\u0440\u0438\u043E\u0434 \u043D\u0435\u0442 \u043F\u0440\u043E\u0430\u043D\u0430\u043B\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0445 \u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439."), errors: [] };
+  if (options.useLlm === false || !report.overview) return { overview: fallback2("\u041E\u0431\u0449\u0438\u0439 \u0430\u043D\u0430\u043B\u0438\u0437 LLM \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D."), errors: [] };
+  if (!llmReady(llm)) {
+    return { overview: fallback2(`\u041E\u0431\u0449\u0438\u0439 \u0430\u043D\u0430\u043B\u0438\u0437 LLM \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D: \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430 \u043F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u0430\u044F ${llm.api_key_env}.`), errors: [] };
+  }
+  const key = createHash2("sha1").update(JSON.stringify([llm.model, hours, relevant.slice(0, MAX_ITEMS).map((item) => [item.id, item.sentiment, item.summary])])).digest("hex");
+  const file = cacheFile(root);
+  if (existsSync4(file)) {
+    try {
+      const cached2 = JSON.parse(readFileSync4(file, "utf8"));
+      if (cached2.key === key) return { overview: cached2.overview, errors: [] };
+    } catch {
+    }
+  }
+  const known = new Set(relevant.map((item) => item.id));
+  let lastError = "";
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const parsed = OverviewSchema.parse(await chatJson(llm, llmKey(llm), systemPrompt2(hours), userPrompt2(relevant), 18e4));
+      const overview = {
+        model: llm.model,
+        summary: parsed.summary.trim(),
+        problems: parsed.problems.slice(0, 6).map((problem) => ({
+          ...problem,
+          example_ids: problem.example_ids.filter((id) => known.has(id)).slice(0, 3)
+        })),
+        generated_at: (/* @__PURE__ */ new Date()).toISOString(),
+        note: ""
+      };
+      writeFileSync4(file, JSON.stringify({ key, overview }, null, 2), "utf8");
+      return { overview, errors: [] };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+    }
+  }
+  return {
+    overview: fallback2("\u041E\u0431\u0449\u0438\u0439 \u0430\u043D\u0430\u043B\u0438\u0437 LLM \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F, \u043D\u0438\u0436\u0435 \u2014 \u0447\u0430\u0441\u0442\u044B\u0435 \u0442\u0435\u043C\u044B \u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0439."),
+    errors: [`LLM overview: ${lastError}`]
+  };
+}
+
+// src/report/sources.ts
+import { existsSync as existsSync5, readFileSync as readFileSync5 } from "node:fs";
+import { homedir as homedir2 } from "node:os";
+import { join as join5, resolve as resolve4 } from "node:path";
+function threadsRoot(root) {
+  const configured = loadConfig(root).report.threads_root.trim() || process.env.NARXOZ_SCRAPER_ROOT?.trim();
+  const candidates = configured ? [resolve4(root, configured)] : [resolve4(root, "..", "threads"), join5(homedir2(), ".narxoz-threads")];
+  return candidates.find((dir) => existsSync5(join5(dir, "data", "posts.jsonl"))) ?? (configured ? candidates[0] : null);
+}
+function reportPath(root) {
+  const configured = loadConfig(root).report.output.trim() || process.env.NARXOZ_REPORT_PATH?.trim();
+  return configured ? resolve4(root, configured) : join5(paths(root).data, "report.html");
+}
+function fromReviews(root) {
+  const [reviews] = mergeReviews(loadExisting(root), []);
+  return reviews.map((review) => ({
+    source: "2gis",
+    id: `2gis:${review.id}`,
+    published_at: review.published_at,
+    author: review.author || "",
+    place: review.branch_name || "",
+    text: review.text || "",
+    rating: review.rating,
+    url: review.url,
+    org_answered: review.replies.some((reply) => reply.from_org),
+    reply_to: "",
+    relevant: review.analysis?.relevant ?? null,
+    sentiment: review.analysis?.sentiment ?? null,
+    topics: review.analysis?.topics ?? [],
+    summary: review.analysis?.summary ?? ""
+  }));
+}
+function fromPosts(dir) {
+  const file = join5(dir, "data", "posts.jsonl");
+  if (!existsSync5(file)) return [];
+  const items = [];
+  for (const line of readFileSync5(file, "utf8").split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let post;
+    try {
+      post = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const key = String(post.id || post.code || post.url || "");
+    if (!key) continue;
+    const analysis = post.analysis && typeof post.analysis === "object" ? post.analysis : null;
+    const parent = post.parent && typeof post.parent === "object" ? post.parent : null;
+    items.push({
+      source: "threads",
+      id: `threads:${key}`,
+      published_at: post.published_at ?? null,
+      author: post.username ? `@${post.username}` : "",
+      place: parent?.username ? `\u043E\u0442\u0432\u0435\u0442 @${parent.username}` : "Threads",
+      text: String(post.text || ""),
+      rating: null,
+      url: String(post.url || ""),
+      org_answered: false,
+      reply_to: String(parent?.text || ""),
+      relevant: typeof analysis?.relevant === "boolean" ? analysis.relevant : null,
+      sentiment: ["positive", "neutral", "negative"].includes(analysis?.sentiment) ? analysis.sentiment : null,
+      topics: Array.isArray(analysis?.topics) ? analysis.topics.map(String) : [],
+      summary: String(analysis?.summary || "")
+    });
+  }
+  return items;
+}
+function loadItems(root) {
+  const dir = threadsRoot(root);
+  const items = [...fromReviews(root), ...dir ? fromPosts(dir) : []];
+  items.sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
+  return { items, threads_root: dir };
+}
+function inPeriod(items, hours) {
+  if (!hours || hours <= 0) return items;
+  const cutoff = Date.now() - hours * 3600 * 1e3;
+  return items.filter((item) => {
+    const ms = Date.parse(String(item.published_at || ""));
+    return !Number.isNaN(ms) && ms >= cutoff;
+  });
+}
+
+// src/report/index.ts
+async function generateReport(root, options = {}) {
+  const cfg = loadConfig(root);
+  const timezone = cfg.timezone || "Asia/Almaty";
+  const hours = options.hours && options.hours > 0 ? options.hours : cfg.report.period_hours || 168;
+  const { items: all, threads_root } = loadItems(root);
+  const items = inPeriod(all, hours);
+  const stats = computeStats(items, hours, timezone);
+  const { overview, errors: errors2 } = await buildOverview(root, items, hours, { useLlm: options.overview });
+  const file = reportPath(root);
+  mkdirSync3(dirname2(file), { recursive: true });
+  const html = renderReport({
+    generated_at: (/* @__PURE__ */ new Date()).toISOString(),
+    timezone,
+    period_hours: hours,
+    period_label: periodWords(hours),
+    overview,
+    stats,
+    threads_connected: Boolean(threads_root),
+    items
+  });
+  writeFileSync5(file, html, "utf8");
+  let email2 = null;
+  if (options.email) {
+    const { to, from, transport } = smtpSetup(root, options.to);
+    const info = await transport.sendMail({
+      from,
+      to,
+      subject: cfg.report.subject.replace("{period}", periodLabel(hours)),
+      html: combinedEmailHtml(overview, stats, items, hours, timezone),
+      attachments: [{ filename: "narxoz-report.html", content: html, contentType: "text/html" }]
+    });
+    email2 = { sent_to: to, from, message_id: info.messageId };
+  }
+  if (!threads_root) {
+    errors2.push("Threads: data/posts.jsonl \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 report.threads_root \u0438\u043B\u0438 NARXOZ_SCRAPER_ROOT");
+  }
+  return {
+    report: file,
+    period_hours: hours,
+    threads_root,
+    mentions: stats.total,
+    relevant: stats.relevant,
+    irrelevant: stats.irrelevant,
+    not_analyzed: stats.not_analyzed,
+    sentiment: stats.sentiment,
+    by_source: stats.by_source,
+    overview_model: overview.model,
+    problems: overview.problems.map((problem) => `${problem.title} (${problem.count})`),
+    email: email2,
+    errors: errors2
+  };
 }
 
 // src/scraper/http.ts
@@ -34382,7 +35165,7 @@ async function fetchText(url) {
 async function fetchJson(url) {
   return await (await get(url, "application/json")).json();
 }
-var sleep = (ms) => new Promise((resolve4) => setTimeout(resolve4, ms));
+var sleep = (ms) => new Promise((resolve5) => setTimeout(resolve5, ms));
 
 // src/scraper/parse.ts
 function isoUtc(value) {
@@ -34746,7 +35529,8 @@ Without a command the MCP server starts on stdio.
 Commands:
   run        Collect new reviews, analyse them with the LLM, rebuild data/index.html
   analyze    Analyse saved reviews only (no scraping)
-  email      Email the report only (no scraping)
+  email      Email the 2GIS report only (no scraping)
+  report     Build the combined 2GIS + Threads report (overall LLM analysis, charts)
   help       Show this message
 
 Options:
@@ -34756,11 +35540,13 @@ Options:
   --hours N      report window for --email / email (default: email.period_hours);
                  analyze: only reviews from the last N hours
   --force        analyze: re-classify reviews that already have an analysis
+  --no-overview  report: skip the overall LLM summary (numbers and topics only)
+  report --email email the combined report; --hours sets its period (default report.period_hours)
 
 Secrets come from the environment: OPENROUTER_API_KEY, SMTP_USER, SMTP_PASS.
 Exit code is 0 on success and 1 when the scrape or the email failed.`;
 function parseArgs(args) {
-  const flags = { full: false, email: false, force: false };
+  const flags = { full: false, email: false, force: false, noOverview: false };
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     const [name2, inline] = arg.split("=", 2);
@@ -34778,6 +35564,9 @@ function parseArgs(args) {
         break;
       case "--force":
         flags.force = true;
+        break;
+      case "--no-overview":
+        flags.noOverview = true;
         break;
       case "--to":
         flags.to = value().split(",").map((address) => address.trim()).filter(Boolean);
@@ -34833,6 +35622,16 @@ ${USAGE}
     if (command === "analyze") {
       const result = await analyzeReviews(root, { force: flags.force, hours: flags.hours ?? 0 });
       print({ command, started, ...result, dashboard: writeHtml(root) });
+      return 0;
+    }
+    if (command === "report") {
+      const result = await generateReport(root, {
+        hours: flags.hours,
+        overview: !flags.noOverview,
+        email: flags.email,
+        to: flags.to
+      });
+      print({ command, started, ...result });
       return 0;
     }
     if (command === "email") {
@@ -34905,7 +35704,7 @@ function lastRun(runsDir) {
     return null;
   }
   try {
-    const run = JSON.parse(readFileSync4(join4(runsDir, latest), "utf8"));
+    const run = JSON.parse(readFileSync6(join6(runsDir, latest), "utf8"));
     return { ran_at: run.ran_at, found: run.found, new: run.new, total: run.total, errors: run.errors };
   } catch {
     return null;
@@ -34969,7 +35768,7 @@ server.tool(
           rating,
           reviews_count
         })),
-        reviews_collected: existsSync4(loc.reviewsJsonl),
+        reviews_collected: existsSync6(loc.reviewsJsonl),
         llm: {
           enabled: cfg.llm.enabled,
           base_url: cfg.llm.base_url,
@@ -35040,6 +35839,27 @@ server.tool(
   async ({ to, hours }) => {
     try {
       return json(await sendReport(scraperRoot(), { to, hours }));
+    } catch (err) {
+      return failure(err);
+    }
+  }
+);
+server.tool(
+  "narxoz_combined_report",
+  "Build the combined 2GIS + Threads report (overall LLM summary, main problems, charts, all mentions) and optionally email it. Only email when the user asks.",
+  {
+    hours: external_exports.number().int().min(1).max(87600).optional().describe("Report period in hours; defaults to report.period_hours (168)"),
+    email: external_exports.boolean().optional().describe("Email the report (SMTP settings as for send_narxoz_2gis_report)"),
+    to: external_exports.array(external_exports.string().email()).optional().describe("Recipients; defaults to email.to in config.json"),
+    open: external_exports.boolean().optional().describe("Open the page in the browser (default false)")
+  },
+  async ({ hours, email: email2, to, open }) => {
+    try {
+      const result = await generateReport(scraperRoot(), { hours, email: Boolean(email2), to });
+      if (open) {
+        openInBrowser(String(result.report));
+      }
+      return json(result);
     } catch (err) {
       return failure(err);
     }

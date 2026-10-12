@@ -16,7 +16,7 @@ const esc = (value: unknown) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-function periodLabel(hours: number): string {
+export function periodLabel(hours: number): string {
   if (hours % 24 === 0) {
     const days = hours / 24;
     return days === 1 ? "сутки" : `${days} дн.`;
@@ -138,12 +138,10 @@ export function buildReportHtml(root: string, hours: number): { html: string; co
   };
 }
 
-export async function sendReport(
-  root: string,
-  options: { to?: string[]; hours?: number } = {}
-): Promise<Record<string, unknown>> {
+/** SMTP transport and envelope from config + env; throws a readable list of what is missing. */
+export function smtpSetup(root: string, toOverride?: string[]) {
   const { email } = loadConfig(root);
-  const to = (options.to?.length ? options.to : email.to).map((address) => address.trim()).filter(Boolean);
+  const to = (toOverride?.length ? toOverride : email.to).map((address) => address.trim()).filter(Boolean);
   const user = (process.env[email.smtp_user_env] || "").trim();
   const pass = process.env[email.smtp_pass_env] || "";
   const from = email.from.trim() || user;
@@ -156,16 +154,23 @@ export async function sendReport(
   if (missing.length) {
     throw new Error(`Не настроена отправка почты, не хватает:\n- ${missing.join("\n- ")}`);
   }
-
-  const hours = options.hours && options.hours > 0 ? options.hours : email.period_hours || 168;
-  const { html, counts } = buildReportHtml(root, hours);
-  const dashboard = writeHtml(root);
   const transport = nodemailer.createTransport({
     host: email.smtp_host,
     port: email.smtp_port,
     secure: email.smtp_secure,
     auth: { user, pass },
   });
+  return { email, to, from, transport };
+}
+
+export async function sendReport(
+  root: string,
+  options: { to?: string[]; hours?: number } = {}
+): Promise<Record<string, unknown>> {
+  const { email, to, from, transport } = smtpSetup(root, options.to);
+  const hours = options.hours && options.hours > 0 ? options.hours : email.period_hours || 168;
+  const { html, counts } = buildReportHtml(root, hours);
+  const dashboard = writeHtml(root);
   const info = await transport.sendMail({
     from,
     to,

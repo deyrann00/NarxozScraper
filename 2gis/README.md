@@ -136,6 +136,14 @@ node plugins/claude/server/index.js help
 0 9 * * * docker run --rm --env-file /srv/narxoz/.env -v /srv/narxoz/data:/app/data -v /srv/narxoz/config.json:/app/config.json deyrann00/narxoz-2gis-scraper run --email --hours 24 >> /srv/narxoz/cron.log 2>&1
 ```
 
+## Общий отчёт с Threads
+
+Команда `report` собирает в один `data/report.html` отзывы 2ГИС и посты Threads-скрапера из соседней папки `../threads`. В отчёте общий анализ от LLM, главные проблемы, графики и все упоминания с фильтрами. Флаг `--email` отправляет отчёт на почту. Подробнее — в [README монорепозитория](../README.md).
+
+```bash
+node plugins/claude/server/index.js report --email --hours 168
+```
+
 ## Инструменты MCP
 
 - `scrape_narxoz_2gis` — сбор (`full: true` — добрать старые отзывы)

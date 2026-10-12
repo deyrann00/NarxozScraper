@@ -1,0 +1,21 @@
+{
+  "name": "narxoz-marketplace",
+  "owner": {
+    "name": "d1rannn"
+  },
+  "metadata": {
+    "description": "Narxoz University monitoring: 2GIS reviews and Threads mentions"
+  },
+  "plugins": [
+    {
+      "name": "narxoz-2gis",
+      "source": "./2gis/plugins/claude",
+      "description": "Collect 2GIS reviews of Narxoz University branches, LLM relevance and sentiment, email reports"
+    },
+    {
+      "name": "narxoz-threads",
+      "source": "./threads/plugins/claude",
+      "description": "Scrape public Threads posts about Narxoz University (Node + Playwright, no Python)"
+    }
+  ]
+}

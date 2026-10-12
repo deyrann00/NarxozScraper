@@ -4,6 +4,7 @@ import { z } from "zod";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runCli } from "./cli.js";
+import { generateReport } from "./report/index.js";
 import { pluginRoot, reviewsPath, scraperRoot } from "./repo.js";
 import { recentReviews } from "./reviews.js";
 import { discoverBranches } from "./scraper/branches.js";
@@ -182,6 +183,28 @@ server.tool(
   async ({ to, hours }) => {
     try {
       return json(await sendReport(scraperRoot(), { to, hours }));
+    } catch (err) {
+      return failure(err);
+    }
+  }
+);
+
+server.tool(
+  "narxoz_combined_report",
+  "Build the combined 2GIS + Threads report (overall LLM summary, main problems, charts, all mentions) and optionally email it. Only email when the user asks.",
+  {
+    hours: z.number().int().min(1).max(87600).optional().describe("Report period in hours; defaults to report.period_hours (168)"),
+    email: z.boolean().optional().describe("Email the report (SMTP settings as for send_narxoz_2gis_report)"),
+    to: z.array(z.string().email()).optional().describe("Recipients; defaults to email.to in config.json"),
+    open: z.boolean().optional().describe("Open the page in the browser (default false)"),
+  },
+  async ({ hours, email, to, open }) => {
+    try {
+      const result = await generateReport(scraperRoot(), { hours, email: Boolean(email), to });
+      if (open) {
+        openInBrowser(String(result.report));
+      }
+      return json(result);
     } catch (err) {
       return failure(err);
     }

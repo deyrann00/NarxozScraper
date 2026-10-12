@@ -22,6 +22,20 @@ export type AppConfig = {
   review_api_key: string;
   llm: LlmConfig;
   email: EmailConfig;
+  report: ReportConfig;
+};
+
+/** Combined 2GIS + Threads report. */
+export type ReportConfig = {
+  /** Threads scraper root (holds data/posts.jsonl); empty = NARXOZ_SCRAPER_ROOT, then ../threads next to this scraper. */
+  threads_root: string;
+  /** Where to write the combined page; empty = NARXOZ_REPORT_PATH, then data/report.html. */
+  output: string;
+  period_hours: number;
+  /** Ask the LLM for the overall summary and the main problems. */
+  overview: boolean;
+  /** `{period}` is replaced with the report window. */
+  subject: string;
 };
 
 /** Any OpenAI-compatible chat endpoint; OpenRouter by default. */
@@ -85,6 +99,13 @@ const DEFAULTS: AppConfig = {
     smtp_pass_env: "SMTP_PASS",
     period_hours: 168,
   },
+  report: {
+    threads_root: "",
+    output: "",
+    period_hours: 168,
+    overview: true,
+    subject: "Нархоз · 2ГИС и Threads за {period}",
+  },
 };
 
 export function paths(root = scraperRoot()) {
@@ -104,14 +125,20 @@ export function paths(root = scraperRoot()) {
 }
 
 export function loadConfig(root = scraperRoot()): AppConfig {
-  const cfg: AppConfig = { ...DEFAULTS, llm: { ...DEFAULTS.llm }, email: { ...DEFAULTS.email } };
+  const cfg: AppConfig = {
+    ...DEFAULTS,
+    llm: { ...DEFAULTS.llm },
+    email: { ...DEFAULTS.email },
+    report: { ...DEFAULTS.report },
+  };
   const file = paths(root).config;
   if (existsSync(file)) {
-    const { llm, email, ...rest } = JSON.parse(readFileSync(file, "utf8")) as Partial<AppConfig>;
+    const { llm, email, report, ...rest } = JSON.parse(readFileSync(file, "utf8")) as Partial<AppConfig>;
     Object.assign(cfg, rest);
     // Nested blocks are merged one level deep so a partial block keeps the other defaults.
     Object.assign(cfg.llm, llm ?? {});
     Object.assign(cfg.email, email ?? {});
+    Object.assign(cfg.report, report ?? {});
   } else {
     // First run of a standalone install: leave an editable copy of the defaults.
     writeFileSync(file, JSON.stringify(DEFAULTS, null, 2) + "\n", "utf8");

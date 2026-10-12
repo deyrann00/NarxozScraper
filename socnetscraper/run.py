@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from socnetscraper.analyze import analyze_posts
 from socnetscraper.config import LOG_DIR, load_config, search_queries
 from socnetscraper.media import download_all
 from socnetscraper.parse import is_university_mention
@@ -102,6 +103,14 @@ def scrape_once(force_browser: bool = False) -> dict[str, Any]:
     merged, new_count = merge_posts(existing, relevant)
     media_saved = download_all(merged)
     save_posts(merged)
+    # Only new or edited posts reach the LLM; a failing LLM never fails the scrape.
+    try:
+        analysis = analyze_posts()
+        errors.extend(analysis.pop("errors"))
+    except Exception as exc:  # noqa: BLE001
+        analysis = None
+        errors.append(f"LLM: {exc}")
+    merged, _ = merge_posts(load_existing(), [])
     recent = lookback_posts(merged, hours)
     week = lookback_posts(merged, week_hours)
     html_path = write_html(hours)
@@ -120,6 +129,7 @@ def scrape_once(force_browser: bool = False) -> dict[str, Any]:
         "total": len(merged),
         "media_files": media_saved,
         "html": str(html_path),
+        "analysis": analysis,
         "errors": errors,
     }
     save_run(summary)

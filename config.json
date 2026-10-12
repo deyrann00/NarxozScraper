@@ -1,6 +1,12 @@
 {
-  "keywords": ["нархоз", "narxoz"],
-  "hashtags": ["narxoz", "нархоз"],
+  "keywords": [
+    "нархоз",
+    "narxoz"
+  ],
+  "hashtags": [
+    "narxoz",
+    "нархоз"
+  ],
   "timezone": "Asia/Almaty",
   "daily_time": "09:00",
   "lookback_hours": 24,
@@ -8,5 +14,17 @@
   "max_scrolls": 10,
   "max_posts_per_query": 80,
   "headless": true,
-  "search_filters": ["recent", "default"]
+  "search_filters": [
+    "recent",
+    "default"
+  ],
+  "llm": {
+    "enabled": true,
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "openai/gpt-4o-mini",
+    "api_key_env": "OPENROUTER_API_KEY",
+    "batch_size": 20,
+    "temperature": 0,
+    "relevance_prompt": ""
+  }
 }

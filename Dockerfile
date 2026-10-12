@@ -3,13 +3,15 @@
 FROM python:3.12-slim
 
 LABEL org.opencontainers.image.title="Narxoz Threads Scraper" \
-      org.opencontainers.image.description="Daily scraper of public Threads posts about Narxoz University: JSONL/CSV archive and HTML dashboard" \
+      org.opencontainers.image.description="Daily scraper of public Threads posts about Narxoz University: LLM relevance and sentiment via OpenRouter, JSONL/CSV archive, HTML dashboard" \
       org.opencontainers.image.source="https://github.com/deyrann00/SocNetScraper" \
-      org.opencontainers.image.version="0.1.0"
+      org.opencontainers.image.version="0.2.0"
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+    # OpenRouter key for LLM relevance and sentiment analysis; empty = no analysis
+    OPENROUTER_API_KEY="" \
     # Optional official Threads API token; empty = browser search
     THREADS_ACCESS_TOKEN="" \
     # Instagram / Threads login, only needed when Threads shows a login wall

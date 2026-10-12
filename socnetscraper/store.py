@@ -21,6 +21,10 @@ CSV_FIELDS = [
     "query",
     "source",
     "scraped_at",
+    "relevant",
+    "sentiment",
+    "topics",
+    "summary",
 ]
 
 
@@ -117,7 +121,15 @@ def save_posts(posts: list[dict[str, Any]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=CSV_FIELDS, extrasaction="ignore")
         writer.writeheader()
         for post in posts:
-            writer.writerow({field: post.get(field, "") for field in CSV_FIELDS})
+            analysis = post.get("analysis") if isinstance(post.get("analysis"), dict) else {}
+            row = {field: post.get(field, "") for field in CSV_FIELDS}
+            row.update(
+                relevant=analysis.get("relevant", ""),
+                sentiment=analysis.get("sentiment", ""),
+                topics="; ".join(analysis.get("topics") or []),
+                summary=analysis.get("summary", ""),
+            )
+            writer.writerow(row)
 
 
 def save_run(summary: dict[str, Any]) -> Path:

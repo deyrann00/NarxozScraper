@@ -1,14 +1,15 @@
 # Narxoz Threads Scraper (SocNetScraper)
 
-Скрипт, который собирает публичные посты [Threads](https://www.threads.com) с упоминаниями **Нархоза** (`нархоз`, `narxoz`, хэштеги). Посты сохраняются в архив JSONL/CSV, по ним строится HTML-дашборд. Запускается одной командой вручную или по cron. В образе уже есть Python, Playwright и Chromium.
+Скрипт, который собирает публичные посты [Threads](https://www.threads.com) с упоминаниями **Нархоза** (`нархоз`, `narxoz`, хэштеги). Нерелевантные посты он отсеивает с помощью LLM (через [OpenRouter](https://openrouter.ai)), остальные раскладывает на **позитивные / нейтральные / негативные**. Посты сохраняются в архив JSONL/CSV, по ним строится HTML-дашборд. Запускается одной командой вручную или по cron. В образе уже есть Python, Playwright и Chromium.
 
 Исходники: [github.com/deyrann00/SocNetScraper](https://github.com/deyrann00/SocNetScraper) (оригинал — [ardakshalkar/SocNetScraper](https://github.com/ardakshalkar/SocNetScraper))
 
 ## Возможности
 
 - Поиск по ключевым словам и хэштегам через официальный Threads API (если есть токен) или через браузерный поиск
-- Архив без дублей: `posts.jsonl` (по одному посту в строке) и `posts.csv`
-- HTML-дашборд `index.html` с фильтром «последние 24 часа / 7 дней»
+- LLM-анализ каждого поста: релевантен ли он администрации (спам, реклама и случайные упоминания отсеиваются), отношение к Нархозу, темы, суть одной фразой. Пост анализируется один раз, результат хранится в архиве
+- Архив без дублей: `posts.jsonl` (по одному посту в строке) и `posts.csv` с колонками `relevant`, `sentiment`, `topics`, `summary`
+- HTML-дашборд `index.html`: «последние 24 часа / 7 дней», вкладки по тональности, вид «лента» или «таблица». Нерелевантные посты скрыты, их показывает галочка
 - Сохранение медиа из постов
 - JSON-сводка каждого запуска
 
@@ -23,8 +24,9 @@ docker run --rm --env-file .env \
 
 | Команда | Что делает |
 | --- | --- |
-| `scrape` | Собрать посты один раз (по умолчанию). Сначала API, если задан токен, иначе браузер |
+| `scrape` | Собрать посты один раз (по умолчанию) и проанализировать новые LLM. Сначала API, если задан токен, иначе браузер |
 | `scrape --browser` | Сразу браузерный поиск, без API |
+| `analyze [--force] [--hours N]` | Только LLM-анализ сохранённых постов. `--force` — заново, например после смены модели |
 | `view --file` | Только пересобрать `data/index.html` |
 | `daily [--time HH:MM] [--now]` | Не завершаться и собирать раз в день |
 | `login` | Войти в Threads и сохранить сессию в `data/` (см. ниже) |
@@ -55,6 +57,7 @@ docker run --rm --env-file .env -v "$PWD/data:/app/data" \
 
 | Переменная | Назначение | Обязательна |
 | --- | --- | --- |
+| `OPENROUTER_API_KEY` | Ключ [OpenRouter](https://openrouter.ai/keys) для LLM-анализа | Нет. Без него посты собираются, но не анализируются |
 | `THREADS_ACCESS_TOKEN` | Токен [официального Threads API](https://developers.facebook.com/docs/threads/keyword-search/) | Нет. Без него используется браузерный поиск |
 | `THREADS_USERNAME` | Логин Instagram / Threads | Только для `login` |
 | `THREADS_PASSWORD` | Пароль Instagram / Threads | Только для `login` |
@@ -62,6 +65,7 @@ docker run --rm --env-file .env -v "$PWD/data:/app/data" \
 Пример `.env`:
 
 ```env
+OPENROUTER_API_KEY=sk-or-...
 THREADS_ACCESS_TOKEN=
 THREADS_USERNAME=your_instagram_username
 THREADS_PASSWORD=your_password
@@ -84,16 +88,27 @@ THREADS_PASSWORD=your_password
   "max_scrolls": 10,
   "max_posts_per_query": 80,
   "headless": true,
-  "search_filters": ["recent", "default"]
+  "search_filters": ["recent", "default"],
+  "llm": {
+    "enabled": true,
+    "base_url": "https://openrouter.ai/api/v1",
+    "model": "openai/gpt-4o-mini",
+    "api_key_env": "OPENROUTER_API_KEY",
+    "batch_size": 20,
+    "temperature": 0,
+    "relevance_prompt": ""
+  }
 }
 ```
+
+`llm.model` принимает любой slug OpenRouter (`google/gemini-2.5-flash`, `anthropic/claude-haiku-4.5`, …). `llm.base_url` подходит любой OpenAI-совместимый. В `relevance_prompt` можно своими словами описать, что важно администрации, — пустое значение означает встроенное описание.
 
 ## Данные (`/app/data`)
 
 | Файл | Содержимое |
 | --- | --- |
-| `posts.jsonl` | Полный архив постов без дублей |
-| `posts.csv` | То же для таблиц |
+| `posts.jsonl` | Полный архив постов без дублей с полем `analysis` |
+| `posts.csv` | То же для таблиц, с колонками `relevant`, `sentiment`, `topics`, `summary` |
 | `index.html` | HTML-дашборд |
 | `media/` | Сохранённые изображения из постов |
 | `runs/` | JSON-сводка каждого запуска |
@@ -101,7 +116,7 @@ THREADS_PASSWORD=your_password
 
 ## Плагин для Claude Code
 
-В репозитории есть плагин Claude Code на Node.js, ему не нужны ни Python, ни Docker. Claude сам собирает посты и пересказывает упоминания за неделю.
+В репозитории есть плагин Claude Code на Node.js, ему не нужны ни Python, ни Docker. Claude сам собирает посты и пересказывает упоминания за неделю. LLM-анализ через OpenRouter пока есть только в скрипте и Docker-образе: в плагине тональность определяет сам Claude.
 
 ```text
 /plugin marketplace add deyrann00/SocNetScraper
@@ -112,6 +127,8 @@ THREADS_PASSWORD=your_password
 
 ## Теги
 
-- `latest`, `0.1.0` — первая версия образа
+- `latest`
+- `0.2.0` — LLM-анализ через OpenRouter: релевантность, тональность, темы; фильтры и таблица в дашборде
+- `0.1.0` — первая версия образа
 
 Платформы: `linux/amd64`, `linux/arm64`.

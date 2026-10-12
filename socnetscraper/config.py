@@ -30,6 +30,16 @@ DEFAULTS: dict[str, Any] = {
     "max_posts_per_query": 80,
     "headless": True,
     "search_filters": ["recent", "default"],
+    # LLM analysis through OpenRouter or any OpenAI-compatible endpoint.
+    "llm": {
+        "enabled": True,
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "openai/gpt-4o-mini",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "batch_size": 20,
+        "temperature": 0,
+        "relevance_prompt": "",
+    },
 }
 
 
@@ -52,8 +62,13 @@ def load_config() -> dict[str, Any]:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     cfg = dict(DEFAULTS)
+    cfg["llm"] = dict(DEFAULTS["llm"])
     if CONFIG_PATH.exists():
-        cfg.update(json.loads(CONFIG_PATH.read_text(encoding="utf-8")))
+        user = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        # The llm block is merged one level deep so a partial block keeps the other defaults.
+        llm = user.pop("llm", None) or {}
+        cfg.update(user)
+        cfg["llm"].update(llm)
     return cfg
 
 

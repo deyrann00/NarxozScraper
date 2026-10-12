@@ -24,6 +24,10 @@ def main() -> None:
         help="Skip the official API and use the browser search",
     )
 
+    analyze = sub.add_parser("analyze", help="Classify saved posts with the LLM (OpenRouter)")
+    analyze.add_argument("--force", action="store_true", help="Re-classify posts that already have an analysis")
+    analyze.add_argument("--hours", type=int, default=0, help="Only posts from the last N hours (0 = all)")
+
     sub.add_parser("login", help="Save a Threads browser session for daily runs")
 
     view = sub.add_parser("view", help="Open the HTML dashboard of scraped posts")
@@ -49,6 +53,17 @@ def main() -> None:
     if command == "login":
         path = save_login_session()
         print(f"Saved Threads session to {path}")
+        return
+
+    if command == "analyze":
+        from socnetscraper.analyze import analyze_posts
+        from socnetscraper.view import write_html
+
+        result = analyze_posts(force=args.force, hours=args.hours)
+        result["html"] = str(write_html())
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        if result["errors"] and not result["analyzed"]:
+            raise SystemExit(1)
         return
 
     if command == "view":

@@ -25,6 +25,12 @@ TEMPLATE = r"""<!DOCTYPE html>
       --line: #e8eaed;
       --bg: #F5F5F6;
       --card: #fff;
+      --pos: #1F9D55;
+      --pos-bg: #E8F6EE;
+      --neu: #8A6D1D;
+      --neu-bg: #FBF4E2;
+      --neg: #D50032;
+      --neg-bg: #FDE8ED;
     }
     * { box-sizing: border-box; }
     body {
@@ -38,7 +44,7 @@ TEMPLATE = r"""<!DOCTYPE html>
       color: #fff;
       padding: 28px 20px 22px;
     }
-    .wrap { max-width: 760px; margin: 0 auto; }
+    .wrap { max-width: 960px; margin: 0 auto; }
     .kicker {
       color: var(--red);
       font-size: 12px;
@@ -149,6 +155,26 @@ TEMPLATE = r"""<!DOCTYPE html>
       font-size: 13px;
     }
     .foot a { color: #2b6cb0; }
+    .check { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
+    .seg .count { opacity: .75; font-size: 12px; margin-left: 4px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .badge { font-size: 12px; border-radius: 999px; padding: 3px 10px; background: var(--bg); color: var(--muted); }
+    .badge.positive { background: var(--pos-bg); color: var(--pos); font-weight: 600; }
+    .badge.neutral { background: var(--neu-bg); color: var(--neu); font-weight: 600; }
+    .badge.negative { background: var(--neg-bg); color: var(--neg); font-weight: 600; }
+    .badge.irrelevant { background: #eee; color: #777; font-weight: 600; }
+    .gist { color: var(--muted); font-size: 14px; margin-top: 8px; font-style: italic; }
+    .card.irrelevant { opacity: .6; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin: 12px 0; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 12px; white-space: nowrap; }
+    td.when-cell { white-space: nowrap; }
+    tr.row-positive td:first-child { box-shadow: inset 3px 0 0 var(--pos); }
+    tr.row-neutral td:first-child { box-shadow: inset 3px 0 0 #F5A623; }
+    tr.row-negative td:first-child { box-shadow: inset 3px 0 0 var(--neg); }
+    tr.row-irrelevant { color: #999; }
+    td a { color: #2b6cb0; }
     .empty {
       text-align: center;
       padding: 48px 16px;
@@ -171,6 +197,17 @@ TEMPLATE = r"""<!DOCTYPE html>
         <button id="btn24" type="button">Last 24 hours</button>
         <button id="btn7" class="active" type="button">Last 7 days</button>
       </div>
+      <div class="seg" id="sentiments">
+        <button data-s="" class="active" type="button">Все</button>
+        <button data-s="negative" type="button">Негативные<span class="count"></span></button>
+        <button data-s="neutral" type="button">Нейтральные<span class="count"></span></button>
+        <button data-s="positive" type="button">Позитивные<span class="count"></span></button>
+      </div>
+      <div class="seg" id="views">
+        <button data-v="feed" class="active" type="button">Лента</button>
+        <button data-v="table" type="button">Таблица</button>
+      </div>
+      <label class="check"><input id="irrelevant" type="checkbox"> показать нерелевантные</label>
       <input id="q" type="search" placeholder="Search text or @username">
       <div class="stats" id="stats"></div>
     </div>
@@ -186,9 +223,14 @@ TEMPLATE = r"""<!DOCTYPE html>
     const search = document.getElementById("q");
     const btn24 = document.getElementById("btn24");
     const btn7 = document.getElementById("btn7");
+    const showIrrelevant = document.getElementById("irrelevant");
+    const SENTIMENT_LABEL = { positive: "Позитивный", neutral: "Нейтральный", negative: "Негативный" };
+    let sentiment = "";
+    let view = "feed";
 
     document.getElementById("generated").textContent =
-      "Updated " + formatWhen(DATA.generated_at) + " · " + DATA.timezone;
+      "Updated " + formatWhen(DATA.generated_at) + " · " + DATA.timezone +
+      (DATA.llm_model ? " · анализ: " + DATA.llm_model : "");
 
     function parseDate(value) {
       if (!value) return null;
@@ -219,16 +261,39 @@ TEMPLATE = r"""<!DOCTYPE html>
       if (!images.length) return "";
       return `<div class="media">${images.map((src) => `<img src="${escapeHtml(src)}" alt="">`).join("")}</div>`;
     }
+    function badgesHtml(post) {
+      if (!post.sentiment) return "";
+      const head = post.relevant === false
+        ? `<span class="badge irrelevant">Нерелевантный</span>`
+        : `<span class="badge ${post.sentiment}">${SENTIMENT_LABEL[post.sentiment]}</span>`;
+      const topics = (post.topics || []).map((topic) => `<span class="badge">${escapeHtml(topic)}</span>`).join("");
+      return `<div class="badges">${head}${topics}</div>` +
+        (post.summary ? `<div class="gist">${escapeHtml(post.summary)}</div>` : "");
+    }
+    function tableHtml(posts) {
+      const rows = posts.map((post) => {
+        const kind = post.relevant === false ? "irrelevant" : (post.sentiment || "");
+        const label = post.relevant === false ? "Нерелевантный" : (SENTIMENT_LABEL[post.sentiment] || "—");
+        const gist = post.summary || String(post.text || "").slice(0, 220);
+        return `<tr class="row-${kind}"><td class="when-cell">${escapeHtml(formatWhen(post.published_at))}</td>
+          <td>@${escapeHtml(post.username)}</td><td>${label}</td>
+          <td>${escapeHtml((post.topics || []).join(", "))}</td><td>${escapeHtml(gist)}</td>
+          <td><a href="${escapeHtml(post.url || "")}" target="_blank" rel="noopener">Threads</a></td></tr>`;
+      }).join("");
+      return `<div class="panel"><table><thead><tr><th>Дата</th><th>Автор</th><th>Тональность</th><th>Темы</th>
+        <th>Суть / текст</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
     function postCard(post, extraClass, label) {
       const tag = label ? `<div class="label">${escapeHtml(label)}</div>` : "";
       const name = post.username ? "@" + post.username : "unknown";
       return `
-        <article class="card ${extraClass || ""}">
+        <article class="card ${extraClass || ""}${post.relevant === false ? " irrelevant" : ""}">
           ${tag}
           <div class="meta">
             <div class="user"><a href="${escapeHtml(post.url || "")}" target="_blank" rel="noopener">${escapeHtml(name)}</a></div>
             <div class="when">${escapeHtml(formatWhen(post.published_at))}</div>
           </div>
+          ${badgesHtml(post)}
           <div class="text">${escapeHtml(post.text)}</div>
           ${mediaHtml(post)}
           <div class="foot">
@@ -265,12 +330,22 @@ TEMPLATE = r"""<!DOCTYPE html>
       const needle = search.value.trim().toLowerCase();
       const hours = range === "24h" ? hours24 : hours7;
       let posts = DATA.posts.filter((post) => inLastHours(post, hours));
+      if (!showIrrelevant.checked) posts = posts.filter((post) => post.relevant !== false);
       if (needle) {
-        posts = posts.filter((post) => (`@${post.username} ${post.text} ${post.parent ? post.parent.text : ""}`).toLowerCase().includes(needle));
+        posts = posts.filter((post) => (`@${post.username} ${post.text} ${post.parent ? post.parent.text : ""} ${post.summary || ""} ${(post.topics || []).join(" ")}`).toLowerCase().includes(needle));
       }
+      document.querySelectorAll("#sentiments button[data-s]").forEach((button) => {
+        const count = button.querySelector(".count");
+        if (count) count.textContent = posts.filter((post) => post.relevant !== false && post.sentiment === button.dataset.s).length;
+      });
+      if (sentiment) posts = posts.filter((post) => post.relevant !== false && post.sentiment === sentiment);
       stats.textContent = posts.length + (range === "24h" ? " in last 24 hours" : " in last 7 days");
       if (!posts.length) {
         feed.innerHTML = `<div class="empty"><strong>No Threads posts in this range</strong>Try the other tab, or run a new scrape.</div>`;
+        return;
+      }
+      if (view === "table") {
+        feed.innerHTML = tableHtml(posts);
         return;
       }
       feed.innerHTML = groupFeed(posts).map((block) => {
@@ -286,6 +361,18 @@ TEMPLATE = r"""<!DOCTYPE html>
     btn24.onclick = () => { range = "24h"; btn24.classList.add("active"); btn7.classList.remove("active"); render(); };
     btn7.onclick = () => { range = "7d"; btn7.classList.add("active"); btn24.classList.remove("active"); render(); };
     search.oninput = render;
+    showIrrelevant.onchange = render;
+    function segment(selector, attr, apply) {
+      document.querySelectorAll(selector + " button").forEach((button) => {
+        button.onclick = () => {
+          apply(button.dataset[attr]);
+          document.querySelectorAll(selector + " button").forEach((other) => other.classList.toggle("active", other === button));
+          render();
+        };
+      });
+    }
+    segment("#sentiments", "s", (value) => { sentiment = value; });
+    segment("#views", "v", (value) => { view = value; });
     render();
   </script>
 </body>
@@ -295,6 +382,7 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 def _view_post(post: dict[str, Any]) -> dict[str, Any]:
     parent = post.get("parent") if isinstance(post.get("parent"), dict) else None
+    analysis = post.get("analysis") if isinstance(post.get("analysis"), dict) else {}
     return {
         "code": post.get("code") or "",
         "username": post.get("username") or "",
@@ -309,6 +397,10 @@ def _view_post(post: dict[str, Any]) -> dict[str, Any]:
         "reply_count": post.get("reply_count") or 0,
         "repost_count": post.get("repost_count") or 0,
         "is_reply": bool(post.get("is_reply")),
+        "relevant": analysis.get("relevant"),
+        "sentiment": analysis.get("sentiment"),
+        "topics": analysis.get("topics") or [],
+        "summary": analysis.get("summary") or "",
         "parent": {
             "code": parent.get("code") or "",
             "username": parent.get("username") or "",
@@ -339,6 +431,11 @@ def dashboard_payload(hours: int | None = None) -> dict[str, Any]:
         "recent_count": len(lookback_posts(posts, lookback)),
         "week_count": len(lookback_posts(posts, week_hours)),
         "total_count": len(posts),
+        "llm_model": max(
+            (post["analysis"] for post in posts if isinstance(post.get("analysis"), dict)),
+            key=lambda analysis: str(analysis.get("analyzed_at") or ""),
+            default={},
+        ).get("model"),
         "posts": [_view_post(post) for post in posts],
     }
 

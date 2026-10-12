@@ -51,6 +51,40 @@ The page loads **last 7 days** first. Switch to **Last 24 hours** for the daily 
 
 If Threads asks you to log in, fill `.env` and run `python -m socnetscraper login`.
 
+## LLM analysis (OpenRouter)
+
+Every scrape sends new posts to an LLM through [OpenRouter](https://openrouter.ai). Each post gets an `analysis` block:
+- `relevant`: whether it matters to the university administration. Spam, ads and posts where "нархоз" is incidental are marked irrelevant.
+- `sentiment`: the author's attitude towards Narxoz: `positive`, `neutral` or `negative`.
+- `topics`: up to three topics.
+- `summary`: a one-line summary in Russian.
+
+A post is analysed once. It goes to the LLM again only if its text changes. The dashboard gets sentiment tabs, a "show irrelevant" toggle (off by default) and a table view. The CSV gets `relevant`, `sentiment`, `topics` and `summary` columns.
+
+1. Get a key at [openrouter.ai/keys](https://openrouter.ai/keys) and add it to `.env`: `OPENROUTER_API_KEY=sk-or-...`
+2. Pick a model in `config.json` → `llm.model`: any OpenRouter slug, such as `openai/gpt-4o-mini`, `google/gemini-2.5-flash` or `anthropic/claude-haiku-4.5`.
+3. Re-classify the archive after changing the model or the prompt: `python -m socnetscraper analyze --force`. Add `--hours 168` to limit it to the last week.
+
+| `llm` field | Meaning |
+| --- | --- |
+| `enabled` | `false` disables the LLM |
+| `base_url` | Any OpenAI-compatible endpoint (OpenRouter by default) |
+| `model` | Model slug |
+| `api_key_env` | Name of the environment variable that holds the key. The key itself never goes in the config |
+| `batch_size` | Posts per request (20) |
+| `temperature` | Default 0 |
+| `relevance_prompt` | Your own description of what the administration cares about. Empty means the built-in one |
+
+Without a key, scraping works as before and posts are simply left unanalysed.
+
+## Docker
+
+The image `deyrann00/socnetscraper` already has Python, Playwright and Chromium installed. See `DOCKERHUB.md`.
+
+```bash
+docker run --rm --env-file .env -v "$PWD/data:/app/data" deyrann00/socnetscraper scrape
+```
+
 ## Run every day
 
 Pick one:

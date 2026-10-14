@@ -14,7 +14,7 @@ FROM python:3.12-slim
 LABEL org.opencontainers.image.title="Narxoz Scraper" \
       org.opencontainers.image.description="2GIS reviews and Threads mentions of Narxoz University in one report: LLM relevance, sentiment and overall analysis via OpenRouter, email" \
       org.opencontainers.image.source="https://github.com/deyrann00/NarxozScraper" \
-      org.opencontainers.image.version="1.0.0"
+      org.opencontainers.image.version="1.1.0"
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \

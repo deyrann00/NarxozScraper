@@ -98,6 +98,8 @@ def merge_posts(
                 merged["image_urls"] = previous["image_urls"]
             if previous.get("images"):
                 merged["images"] = previous["images"]
+            if previous.get("thumbs"):
+                merged["thumbs"] = previous["thumbs"]
         if not post.get("avatar") and previous.get("avatar"):
             merged["avatar"] = previous["avatar"]
         if not (post.get("parent") or {}).get("text") and (previous.get("parent") or {}).get("text"):

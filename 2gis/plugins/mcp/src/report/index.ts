@@ -5,6 +5,8 @@ import { periodLabel, smtpSetup } from "../scraper/email.js";
 import { combinedEmailHtml } from "./email.js";
 import { renderReport } from "./html.js";
 import { buildOverview, computeStats, periodWords } from "./overview.js";
+import { embedPreviews } from "./previews.js";
+import { markSeen, recordSent } from "./sent.js";
 import { inPeriod, loadItems, reportPath } from "./sources.js";
 
 export type ReportOptions = {
@@ -24,11 +26,15 @@ export async function generateReport(root: string, options: ReportOptions = {}):
   const items = inPeriod(all, hours);
   const stats = computeStats(items, hours, timezone);
   const { overview, errors } = await buildOverview(root, items, hours, { useLlm: options.overview });
+  markSeen(root, items);
+  embedPreviews(items, threads_root);
+  const fresh = items.filter((item) => !item.sent_at).length;
 
   const file = reportPath(root);
   mkdirSync(dirname(file), { recursive: true });
+  const generatedAt = new Date().toISOString();
   const html = renderReport({
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt,
     timezone,
     period_hours: hours,
     period_label: periodWords(hours),
@@ -49,7 +55,9 @@ export async function generateReport(root: string, options: ReportOptions = {}):
       html: combinedEmailHtml(overview, stats, items, hours, timezone),
       attachments: [{ filename: "narxoz-report.html", content: html, contentType: "text/html" }],
     });
-    email = { sent_to: to, from, message_id: info.messageId };
+    // Only a sent email counts: the next report shows these mentions as already seen.
+    const recorded = recordSent(root, items, generatedAt);
+    email = { sent_to: to, from, message_id: info.messageId, newly_recorded: recorded };
   }
 
   if (!threads_root) {
@@ -63,6 +71,8 @@ export async function generateReport(root: string, options: ReportOptions = {}):
     relevant: stats.relevant,
     irrelevant: stats.irrelevant,
     not_analyzed: stats.not_analyzed,
+    new_mentions: fresh,
+    seen_before: items.length - fresh,
     sentiment: stats.sentiment,
     by_source: stats.by_source,
     overview_model: overview.model,

@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
   "playwright>=1.49.0",
   "requests>=2.32.0",
+  "pillow>=10.4.0",
   "python-dotenv>=1.0.1",
   "schedule>=1.2.2",
   "mcp>=1.9.0",

@@ -27,6 +27,12 @@ export type Item = {
   sentiment: Sentiment | null;
   topics: string[];
   summary: string;
+  /** Threads photos: paths under the Threads data folder, then data: URIs once embedded (see previews.ts). */
+  media: string[];
+  /** Photos the post has, including ones left out of the report. */
+  media_total: number;
+  /** When an emailed report first included this mention; null = new. */
+  sent_at: string | null;
 };
 
 /**
@@ -61,6 +67,9 @@ function fromReviews(root: string): Item[] {
     sentiment: review.analysis?.sentiment ?? null,
     topics: review.analysis?.topics ?? [],
     summary: review.analysis?.summary ?? "",
+    media: [],
+    media_total: 0,
+    sent_at: null,
   }));
 }
 
@@ -80,6 +89,8 @@ function fromPosts(dir: string): Item[] {
     if (!key) continue;
     const analysis = post.analysis && typeof post.analysis === "object" ? post.analysis : null;
     const parent = post.parent && typeof post.parent === "object" ? post.parent : null;
+    const images = Array.isArray(post.images) ? post.images.map(String) : [];
+    const thumbs = Array.isArray(post.thumbs) ? post.thumbs.map(String) : [];
     items.push({
       source: "threads",
       id: `threads:${key}`,
@@ -95,6 +106,10 @@ function fromPosts(dir: string): Item[] {
       sentiment: ["positive", "neutral", "negative"].includes(analysis?.sentiment) ? analysis.sentiment : null,
       topics: Array.isArray(analysis?.topics) ? analysis.topics.map(String) : [],
       summary: String(analysis?.summary || ""),
+      // Thumbnails when the scraper made them; full photos are embedded only if small (previews.ts).
+      media: thumbs.length ? thumbs : images,
+      media_total: Math.max(images.length, thumbs.length, Array.isArray(post.image_urls) ? post.image_urls.length : 0),
+      sent_at: null,
     });
   }
   return items;

@@ -30,7 +30,11 @@ export function combinedEmailHtml(
   timezone: string
 ): string {
   const byId = new Map(items.map((item) => [item.id, item]));
-  const negatives = items.filter((item) => item.relevant && item.sentiment === "negative").slice(0, 40);
+  // The list repeats nothing earlier emails already had; the attached page still has everything.
+  const allNegatives = items.filter((item) => item.relevant && item.sentiment === "negative");
+  const negatives = allNegatives.filter((item) => !item.sent_at).slice(0, 40);
+  const seenNegatives = allNegatives.length - allNegatives.filter((item) => !item.sent_at).length;
+  const fresh = items.filter((item) => !item.sent_at).length;
   const summary = overview.summary
     ? overview.summary
         .split(/\n\s*\n/)
@@ -86,6 +90,7 @@ export function combinedEmailHtml(
       `нейтрально ${stats.sentiment.neutral} · позитив ${stats.sentiment.positive}` +
       (stats.avg_rating_2gis != null ? ` · ★ 2ГИС ${stats.avg_rating_2gis}` : "") +
       (overview.model ? ` · анализ: ${esc(overview.model)}` : "") +
+      `<br>Новых с прошлого письма: ${fresh} из ${items.length}` +
       "</div></div>",
     '<div style="background:#fcfcfb;border:1px solid #e6e5e1;border-radius:14px;padding:6px 18px 18px;margin-top:16px">',
     '<h2 style="font-size:16px;margin:16px 0 8px">Общий анализ</h2>',
@@ -99,11 +104,14 @@ export function combinedEmailHtml(
     sourceRow("threads"),
     "</table>",
     negatives.length
-      ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS.negative}">Негативные упоминания · ${stats.sentiment.negative}</h2>` +
+      ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS.negative}">Новые негативные упоминания · ${negatives.length}</h2>` +
         '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%">' +
         `<tr><th ${TH}>Дата</th><th ${TH}>Источник</th><th ${TH}>Место</th><th ${TH}>★</th><th ${TH}>Суть</th><th ${TH}></th></tr>` +
         negativeRows +
         "</table>"
+      : "",
+    seenNegatives
+      ? `<p style="color:#6b6a65;font-size:13px">Ещё ${seenNegatives} негативных уже были в прошлых письмах — они в отчёте, фильтр «Ранее показанные».</p>`
       : "",
     "</div>",
     '<p style="color:#6b6a65;font-size:12px;margin-top:16px">Полный отчёт с графиками и фильтрами — во вложении (report.html).</p>',

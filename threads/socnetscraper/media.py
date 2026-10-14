@@ -11,6 +11,9 @@ import requests
 from socnetscraper.config import DATA_DIR, MEDIA_DIR
 
 log = logging.getLogger("socnetscraper")
+# Previews for the combined report: small enough to embed in one emailed HTML file.
+THUMB_SIZE = (360, 360)
+THUMB_QUALITY = 70
 SAFE = re.compile(r"[^A-Za-z0-9._-]+")
 HEADERS = {
     "User-Agent": (
@@ -61,7 +64,27 @@ def _download_images(post: dict[str, Any], fetch) -> int:
                 saved += 1
     if local:
         post["images"] = local
+        thumbs = [thumb for thumb in (_thumbnail(DATA_DIR / path) for path in local) if thumb]
+        if thumbs:
+            post["thumbs"] = thumbs
     return saved
+
+
+def _thumbnail(source: Path) -> str | None:
+    """JPEG preview next to the posts folder (media/thumbs/<code>/<n>.jpg); None without Pillow."""
+    dest = MEDIA_DIR / "thumbs" / source.parent.name / f"{source.stem}.jpg"
+    if not dest.exists():
+        try:
+            from PIL import Image
+
+            with Image.open(source) as image:
+                image.thumbnail(THUMB_SIZE)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                image.convert("RGB").save(dest, "JPEG", quality=THUMB_QUALITY, optimize=True)
+        except Exception as exc:
+            log.debug("Thumbnail failed %s: %s", source.name, exc)
+            return None
+    return _public(dest)
 
 
 def _ext(url: str, default: str) -> str:

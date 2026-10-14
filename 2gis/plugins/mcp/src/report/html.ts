@@ -137,6 +137,15 @@ const TEMPLATE = `<!DOCTYPE html>
     .gist { color: var(--ink-2); font-style: italic; font-size: 14px; margin-top: 8px; }
     .quote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--muted); font-size: 13px; margin-top: 8px; white-space: pre-wrap; }
     .text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; margin-top: 8px; }
+    .shots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .shots a { position: relative; display: block; width: 116px; height: 116px; border-radius: 10px; overflow: hidden; background: var(--neu-soft); }
+    .shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .shots .more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55); color: #fff; font-weight: 700; font-size: 18px; }
+    .badge.seen { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
+    .badge.fresh { background: var(--brand); color: #fff; }
+    td .thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; display: block; }
+    @media (max-width: 560px) { .shots a { width: calc(50% - 3px); height: auto; aspect-ratio: 1; } }
     .foot { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 8px; }
     .table-wrap { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -191,6 +200,11 @@ const TEMPLATE = `<!DOCTYPE html>
           <button data-v="neutral" type="button">Нейтрально<span class="count"></span></button>
           <button data-v="positive" type="button">Позитив<span class="count"></span></button>
         </div>
+        <div class="seg-ctl" id="seen">
+          <button data-v="" class="active" type="button">Все</button>
+          <button data-v="new" type="button">Новые<span class="count"></span></button>
+          <button data-v="seen" type="button">Ранее показанные<span class="count"></span></button>
+        </div>
         <div class="seg-ctl" id="views">
           <button data-v="feed" class="active" type="button">Лента</button>
           <button data-v="table" type="button">Таблица</button>
@@ -208,7 +222,10 @@ const TEMPLATE = `<!DOCTYPE html>
     const LABEL = { negative: "Негатив", neutral: "Нейтрально", positive: "Позитив" };
     const SOURCE = { "2gis": "2ГИС", threads: "Threads" };
     const ORDER = ["negative", "neutral", "positive"];
-    const state = { source: "", sentiment: "", view: "feed" };
+    // Open on new mentions when earlier emails already showed some of the period.
+    const anySeen = DATA.items.some(function (i) { return i.sent_at; });
+    const anyNew = DATA.items.some(function (i) { return !i.sent_at; });
+    const state = { source: "", sentiment: "", seen: anySeen && anyNew ? "new" : "", view: "feed" };
 
     function esc(text) {
       return String(text == null ? "" : text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -315,8 +332,24 @@ const TEMPLATE = `<!DOCTYPE html>
       const head = item.relevant === false ? '<span class="badge">Нерелевантный</span>'
         : item.sentiment ? '<span class="badge ' + item.sentiment + '">' + LABEL[item.sentiment] + "</span>"
         : '<span class="badge">Без анализа</span>';
-      return '<div class="badges"><span class="badge src">' + SOURCE[item.source] + "</span>" + head +
+      const seen = item.sent_at
+        ? '<span class="badge seen" title="Было в письме ' + esc(when(item.sent_at)) + '">Показано ' + esc(day(item.sent_at)) + "</span>"
+        : (anySeen ? '<span class="badge fresh">Новое</span>' : "");
+      return '<div class="badges"><span class="badge src">' + SOURCE[item.source] + "</span>" + head + seen +
         item.topics.map(function (t) { return '<span class="badge">' + esc(t) + "</span>"; }).join("") + "</div>";
+    }
+    function day(value) {
+      const dt = value ? new Date(value) : null;
+      if (!dt || Number.isNaN(dt.getTime())) return "";
+      return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "short", timeZone: DATA.timezone });
+    }
+    function shots(item) {
+      if (!item.media.length) return "";
+      const extra = item.media_total - item.media.length;
+      return '<div class="shots">' + item.media.map(function (src, i) {
+        const more = i === item.media.length - 1 && extra > 0 ? '<span class="more">+' + extra + "</span>" : "";
+        return '<a href="' + esc(item.url) + '" target="_blank" rel="noopener" title="Открыть пост"><img src="' + esc(src) + '" alt="Фото из поста">' + more + "</a>";
+      }).join("") + "</div>";
     }
     function card(item) {
       return '<article class="item' + (item.relevant === false ? " irrelevant" : "") + '">' +
@@ -325,20 +358,21 @@ const TEMPLATE = `<!DOCTYPE html>
         '<div class="place">' + esc(item.place) + "</div>" + badges(item) +
         (item.summary ? '<div class="gist">' + esc(item.summary) + "</div>" : "") +
         (item.reply_to ? '<div class="quote">' + esc(item.reply_to.slice(0, 400)) + "</div>" : "") +
-        '<div class="text">' + esc(item.text) + "</div>" +
+        '<div class="text">' + esc(item.text) + "</div>" + shots(item) +
         '<div class="foot">' + (item.source === "2gis" ? "<span>" + (item.org_answered ? "✓ есть ответ Нархоза" : "без ответа Нархоза") + "</span>" : "") +
         '<a href="' + esc(item.url) + '" target="_blank" rel="noopener">Открыть в ' + SOURCE[item.source] + "</a></div></article>";
     }
     function table(items) {
       return '<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Источник</th><th>Автор / место</th><th>★</th>' +
-        "<th>Тональность</th><th>Темы</th><th>Суть / текст</th><th></th></tr></thead><tbody>" +
+        "<th>Тональность</th><th>Темы</th><th>Суть / текст</th><th>Фото</th><th></th></tr></thead><tbody>" +
         items.map(function (item) {
           const kind = item.relevant === false ? "irrelevant" : (item.sentiment || "");
           const label = item.relevant === false ? "Нерелевантный" : (LABEL[item.sentiment] || "—");
           return '<tr class="row-' + kind + '"><td class="nw">' + esc(when(item.published_at)) + "</td><td>" + SOURCE[item.source] + "</td>" +
             "<td>" + esc(item.author) + "<br><span class=\\"when\\">" + esc(item.place) + "</span></td><td>" + (item.rating || "—") + "</td>" +
             "<td>" + label + "</td><td>" + esc(item.topics.join(", ")) + "</td>" +
-            "<td>" + esc(item.summary || item.text.slice(0, 220)) + "</td>" +
+            "<td>" + esc(item.summary || item.text.slice(0, 220)) + (item.sent_at ? '<br><span class="when">показано ' + esc(day(item.sent_at)) + "</span>" : "") + "</td>" +
+            "<td>" + (item.media.length ? '<img class="thumb" src="' + esc(item.media[0]) + '" alt="">' : "") + "</td>" +
             '<td><a href="' + esc(item.url) + '" target="_blank" rel="noopener">открыть</a></td></tr>';
         }).join("") + "</tbody></table></div>";
     }
@@ -349,11 +383,16 @@ const TEMPLATE = `<!DOCTYPE html>
         if (!needle) return true;
         return [item.author, item.place, item.text, item.summary, item.topics.join(" "), item.reply_to].join(" ").toLowerCase().includes(needle);
       });
+      document.querySelectorAll("#seen button").forEach(function (b) {
+        const c = b.querySelector(".count");
+        if (c) c.textContent = base.filter(function (i) { return (b.dataset.v === "seen") === Boolean(i.sent_at); }).length;
+      });
+      const bySeen = base.filter(function (i) { return !state.seen || (state.seen === "seen") === Boolean(i.sent_at); });
       document.querySelectorAll("#sources button").forEach(function (b) {
         const c = b.querySelector(".count");
-        if (c) c.textContent = base.filter(function (i) { return i.source === b.dataset.v; }).length;
+        if (c) c.textContent = bySeen.filter(function (i) { return i.source === b.dataset.v; }).length;
       });
-      const bySource = base.filter(function (i) { return !state.source || i.source === state.source; });
+      const bySource = bySeen.filter(function (i) { return !state.source || i.source === state.source; });
       document.querySelectorAll("#sentiments button").forEach(function (b) {
         const c = b.querySelector(".count");
         if (c) c.textContent = bySource.filter(function (i) { return i.relevant !== false && i.sentiment === b.dataset.v; }).length;
@@ -374,7 +413,9 @@ const TEMPLATE = `<!DOCTYPE html>
     }
     segment("sources", "source");
     segment("sentiments", "sentiment");
+    segment("seen", "seen");
     segment("views", "view");
+    document.querySelectorAll("#seen button").forEach(function (b) { b.classList.toggle("active", b.dataset.v === state.seen); });
     search.oninput = render;
     showIrrelevant.onchange = render;
     render();

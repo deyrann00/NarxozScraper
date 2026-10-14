@@ -2980,7 +2980,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a = root.localRefs) === null || _a === void 0 ? void 0 : _a[ref];
         const { schemaId } = this.opts;
@@ -3007,7 +3007,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3837,7 +3837,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options) {
+    function resolve6(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4206,7 +4206,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve5,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -19305,7 +19305,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error3) {
@@ -19322,7 +19322,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error3) => {
         reject(error3);
       };
@@ -19400,7 +19400,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error3) {
           reject(error3);
@@ -19661,12 +19661,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -20757,7 +20757,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -21421,20 +21421,20 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message2) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       const json2 = serializeMessage(message2);
       if (this._stdout.write(json2)) {
-        resolve5();
+        resolve6();
       } else {
-        this._stdout.once("drain", resolve5);
+        this._stdout.once("drain", resolve6);
       }
     });
   }
 };
 
 // src/index.ts
-import { existsSync as existsSync6, readdirSync, readFileSync as readFileSync6 } from "node:fs";
-import { join as join6 } from "node:path";
+import { existsSync as existsSync8, readdirSync, readFileSync as readFileSync8 } from "node:fs";
+import { join as join7 } from "node:path";
 
 // src/repo.ts
 import { existsSync, mkdirSync } from "node:fs";
@@ -21488,8 +21488,8 @@ function reviewsPath(root) {
 }
 
 // src/report/index.ts
-import { mkdirSync as mkdirSync3, writeFileSync as writeFileSync5 } from "node:fs";
-import { dirname as dirname2 } from "node:path";
+import { mkdirSync as mkdirSync4, writeFileSync as writeFileSync6 } from "node:fs";
+import { dirname as dirname3 } from "node:path";
 
 // src/scraper/config.ts
 import { existsSync as existsSync2, mkdirSync as mkdirSync2, readFileSync, writeFileSync } from "node:fs";
@@ -22720,12 +22720,12 @@ var getLogger = (options, defaults) => {
   });
   return response;
 };
-var callbackPromise = (resolve5, reject) => function(...args) {
+var callbackPromise = (resolve6, reject) => function(...args) {
   const err = args.shift();
   if (err) {
     reject(err);
   } else {
-    resolve5(...args);
+    resolve6(...args);
   }
 };
 var parseDataURI = (uri) => {
@@ -22792,8 +22792,8 @@ function resolveContent(data, key, options, callback) {
   options = options || {};
   let promise;
   if (!callback) {
-    promise = new Promise((resolve5, reject) => {
-      callback = callbackPromise(resolve5, reject);
+    promise = new Promise((resolve6, reject) => {
+      callback = callbackPromise(resolve6, reject);
     });
   }
   resolveContentValue(data, key, options, callback);
@@ -26614,8 +26614,8 @@ var MimeNode = class _MimeNode {
   build(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve5, reject) => {
-        callback = callbackPromise(resolve5, reject);
+      promise = new Promise((resolve6, reject) => {
+        callback = callbackPromise(resolve6, reject);
       });
     }
     const done = callback;
@@ -28967,8 +28967,8 @@ var Mail = class extends EventEmitter {
   sendMail(data, callback = null) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve5, reject) => {
-        callback = callbackPromise(resolve5, reject);
+      promise = new Promise((resolve6, reject) => {
+        callback = callbackPromise(resolve6, reject);
       });
     }
     const done = callback;
@@ -29667,7 +29667,7 @@ var SMTPConnection = class extends EventEmitter2 {
       const handler = this.customAuth.get(this._authMethod);
       let lastResponse;
       let returned = false;
-      const resolve5 = () => {
+      const resolve6 = () => {
         if (returned) {
           return;
         }
@@ -29691,8 +29691,8 @@ var SMTPConnection = class extends EventEmitter2 {
       const sendCommand = (cmd, done) => {
         let promise;
         if (!done) {
-          promise = new Promise((resolve6, reject2) => {
-            done = callbackPromise(resolve6, reject2);
+          promise = new Promise((resolve7, reject2) => {
+            done = callbackPromise(resolve7, reject2);
           });
         }
         this._responseActions.push((str) => {
@@ -29724,11 +29724,11 @@ var SMTPConnection = class extends EventEmitter2 {
         authMethods: [].concat(this._supportedAuth),
         maxAllowedSize: this._maxAllowedSize || false,
         sendCommand,
-        resolve: resolve5,
+        resolve: resolve6,
         reject
       });
       if (handlerResponse && typeof handlerResponse.catch === "function") {
-        handlerResponse.then(resolve5).catch(reject);
+        handlerResponse.then(resolve6).catch(reject);
       }
       return;
     }
@@ -32487,8 +32487,8 @@ var SMTPPool = class extends EventEmitter4 {
   verify(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve5, reject) => {
-        callback = callbackPromise(resolve5, reject);
+      promise = new Promise((resolve6, reject) => {
+        callback = callbackPromise(resolve6, reject);
       });
     }
     const done = callback;
@@ -32779,8 +32779,8 @@ var SMTPTransport = class extends EventEmitter5 {
   verify(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve5, reject) => {
-        callback = callbackPromise(resolve5, reject);
+      promise = new Promise((resolve6, reject) => {
+        callback = callbackPromise(resolve6, reject);
       });
     }
     const done = callback;
@@ -33303,8 +33303,8 @@ var SESTransport = class extends EventEmitter6 {
   verify(callback) {
     let promise;
     if (!callback) {
-      promise = new Promise((resolve5, reject) => {
-        callback = callbackPromise(resolve5, reject);
+      promise = new Promise((resolve6, reject) => {
+        callback = callbackPromise(resolve6, reject);
       });
     }
     const done = callback;
@@ -33390,8 +33390,8 @@ function createTestAccount(apiUrl, callback) {
     apiUrl = false;
   }
   if (!callback) {
-    promise = new Promise((resolve5, reject) => {
-      callback = callbackPromise(resolve5, reject);
+    promise = new Promise((resolve6, reject) => {
+      callback = callbackPromise(resolve6, reject);
     });
   }
   const done = callback;
@@ -34191,7 +34191,10 @@ function when(value, timezone) {
 }
 function combinedEmailHtml(overview, stats, items, hours, timezone) {
   const byId = new Map(items.map((item) => [item.id, item]));
-  const negatives = items.filter((item) => item.relevant && item.sentiment === "negative").slice(0, 40);
+  const allNegatives = items.filter((item) => item.relevant && item.sentiment === "negative");
+  const negatives = allNegatives.filter((item) => !item.sent_at).slice(0, 40);
+  const seenNegatives = allNegatives.length - allNegatives.filter((item) => !item.sent_at).length;
+  const fresh = items.filter((item) => !item.sent_at).length;
   const summary = overview.summary ? overview.summary.split(/\n\s*\n/).map((p) => `<p style="margin:0 0 10px;line-height:1.55">${esc3(p.trim())}</p>`).join("") : `<p style="color:#6b6a65">${esc3(overview.note)}</p>`;
   const problems = overview.problems.length ? overview.problems.map((problem) => {
     const examples = problem.example_ids.map((id) => byId.get(id)).filter((item) => Boolean(item)).map(
@@ -34213,7 +34216,7 @@ function combinedEmailHtml(overview, stats, items, hours, timezone) {
     '<div style="background:#01080A;color:#fff;border-radius:14px;padding:20px 22px">',
     '<div style="color:#D50032;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700">NarxozScraper</div>',
     `<div style="font-size:22px;font-weight:650;margin:6px 0">2\u0413\u0418\u0421 \u0438 Threads \u0437\u0430 ${esc3(periodLabel(hours))}</div>`,
-    `<div style="color:#c9cdd3;font-size:13px">\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445: ${stats.relevant} \xB7 \u043D\u0435\u0433\u0430\u0442\u0438\u0432 ${stats.sentiment.negative} \xB7 \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E ${stats.sentiment.neutral} \xB7 \u043F\u043E\u0437\u0438\u0442\u0438\u0432 ${stats.sentiment.positive}` + (stats.avg_rating_2gis != null ? ` \xB7 \u2605 2\u0413\u0418\u0421 ${stats.avg_rating_2gis}` : "") + (overview.model ? ` \xB7 \u0430\u043D\u0430\u043B\u0438\u0437: ${esc3(overview.model)}` : "") + "</div></div>",
+    `<div style="color:#c9cdd3;font-size:13px">\u0420\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0445: ${stats.relevant} \xB7 \u043D\u0435\u0433\u0430\u0442\u0438\u0432 ${stats.sentiment.negative} \xB7 \u043D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E ${stats.sentiment.neutral} \xB7 \u043F\u043E\u0437\u0438\u0442\u0438\u0432 ${stats.sentiment.positive}` + (stats.avg_rating_2gis != null ? ` \xB7 \u2605 2\u0413\u0418\u0421 ${stats.avg_rating_2gis}` : "") + (overview.model ? ` \xB7 \u0430\u043D\u0430\u043B\u0438\u0437: ${esc3(overview.model)}` : "") + `<br>\u041D\u043E\u0432\u044B\u0445 \u0441 \u043F\u0440\u043E\u0448\u043B\u043E\u0433\u043E \u043F\u0438\u0441\u044C\u043C\u0430: ${fresh} \u0438\u0437 ${items.length}</div></div>`,
     '<div style="background:#fcfcfb;border:1px solid #e6e5e1;border-radius:14px;padding:6px 18px 18px;margin-top:16px">',
     '<h2 style="font-size:16px;margin:16px 0 8px">\u041E\u0431\u0449\u0438\u0439 \u0430\u043D\u0430\u043B\u0438\u0437</h2>',
     summary,
@@ -34225,7 +34228,8 @@ function combinedEmailHtml(overview, stats, items, hours, timezone) {
     sourceRow("2gis"),
     sourceRow("threads"),
     "</table>",
-    negatives.length ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS2.negative}">\u041D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \xB7 ${stats.sentiment.negative}</h2><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr><th ${TH2}>\u0414\u0430\u0442\u0430</th><th ${TH2}>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th ${TH2}>\u041C\u0435\u0441\u0442\u043E</th><th ${TH2}>\u2605</th><th ${TH2}>\u0421\u0443\u0442\u044C</th><th ${TH2}></th></tr>` + negativeRows + "</table>" : "",
+    negatives.length ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS2.negative}">\u041D\u043E\u0432\u044B\u0435 \u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \xB7 ${negatives.length}</h2><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr><th ${TH2}>\u0414\u0430\u0442\u0430</th><th ${TH2}>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th ${TH2}>\u041C\u0435\u0441\u0442\u043E</th><th ${TH2}>\u2605</th><th ${TH2}>\u0421\u0443\u0442\u044C</th><th ${TH2}></th></tr>` + negativeRows + "</table>" : "",
+    seenNegatives ? `<p style="color:#6b6a65;font-size:13px">\u0415\u0449\u0451 ${seenNegatives} \u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0443\u0436\u0435 \u0431\u044B\u043B\u0438 \u0432 \u043F\u0440\u043E\u0448\u043B\u044B\u0445 \u043F\u0438\u0441\u044C\u043C\u0430\u0445 \u2014 \u043E\u043D\u0438 \u0432 \u043E\u0442\u0447\u0451\u0442\u0435, \u0444\u0438\u043B\u044C\u0442\u0440 \xAB\u0420\u0430\u043D\u0435\u0435 \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u043D\u044B\u0435\xBB.</p>` : "",
     "</div>",
     '<p style="color:#6b6a65;font-size:12px;margin-top:16px">\u041F\u043E\u043B\u043D\u044B\u0439 \u043E\u0442\u0447\u0451\u0442 \u0441 \u0433\u0440\u0430\u0444\u0438\u043A\u0430\u043C\u0438 \u0438 \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u043C\u0438 \u2014 \u0432\u043E \u0432\u043B\u043E\u0436\u0435\u043D\u0438\u0438 (report.html).</p>',
     "</div></body></html>"
@@ -34355,6 +34359,15 @@ var TEMPLATE2 = `<!DOCTYPE html>
     .gist { color: var(--ink-2); font-style: italic; font-size: 14px; margin-top: 8px; }
     .quote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--muted); font-size: 13px; margin-top: 8px; white-space: pre-wrap; }
     .text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.45; margin-top: 8px; }
+    .shots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .shots a { position: relative; display: block; width: 116px; height: 116px; border-radius: 10px; overflow: hidden; background: var(--neu-soft); }
+    .shots img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .shots .more { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55); color: #fff; font-weight: 700; font-size: 18px; }
+    .badge.seen { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
+    .badge.fresh { background: var(--brand); color: #fff; }
+    td .thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; display: block; }
+    @media (max-width: 560px) { .shots a { width: calc(50% - 3px); height: auto; aspect-ratio: 1; } }
     .foot { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 8px; }
     .table-wrap { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -34409,6 +34422,11 @@ var TEMPLATE2 = `<!DOCTYPE html>
           <button data-v="neutral" type="button">\u041D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E<span class="count"></span></button>
           <button data-v="positive" type="button">\u041F\u043E\u0437\u0438\u0442\u0438\u0432<span class="count"></span></button>
         </div>
+        <div class="seg-ctl" id="seen">
+          <button data-v="" class="active" type="button">\u0412\u0441\u0435</button>
+          <button data-v="new" type="button">\u041D\u043E\u0432\u044B\u0435<span class="count"></span></button>
+          <button data-v="seen" type="button">\u0420\u0430\u043D\u0435\u0435 \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u043D\u044B\u0435<span class="count"></span></button>
+        </div>
         <div class="seg-ctl" id="views">
           <button data-v="feed" class="active" type="button">\u041B\u0435\u043D\u0442\u0430</button>
           <button data-v="table" type="button">\u0422\u0430\u0431\u043B\u0438\u0446\u0430</button>
@@ -34426,7 +34444,10 @@ var TEMPLATE2 = `<!DOCTYPE html>
     const LABEL = { negative: "\u041D\u0435\u0433\u0430\u0442\u0438\u0432", neutral: "\u041D\u0435\u0439\u0442\u0440\u0430\u043B\u044C\u043D\u043E", positive: "\u041F\u043E\u0437\u0438\u0442\u0438\u0432" };
     const SOURCE = { "2gis": "2\u0413\u0418\u0421", threads: "Threads" };
     const ORDER = ["negative", "neutral", "positive"];
-    const state = { source: "", sentiment: "", view: "feed" };
+    // Open on new mentions when earlier emails already showed some of the period.
+    const anySeen = DATA.items.some(function (i) { return i.sent_at; });
+    const anyNew = DATA.items.some(function (i) { return !i.sent_at; });
+    const state = { source: "", sentiment: "", seen: anySeen && anyNew ? "new" : "", view: "feed" };
 
     function esc(text) {
       return String(text == null ? "" : text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -34533,8 +34554,24 @@ var TEMPLATE2 = `<!DOCTYPE html>
       const head = item.relevant === false ? '<span class="badge">\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439</span>'
         : item.sentiment ? '<span class="badge ' + item.sentiment + '">' + LABEL[item.sentiment] + "</span>"
         : '<span class="badge">\u0411\u0435\u0437 \u0430\u043D\u0430\u043B\u0438\u0437\u0430</span>';
-      return '<div class="badges"><span class="badge src">' + SOURCE[item.source] + "</span>" + head +
+      const seen = item.sent_at
+        ? '<span class="badge seen" title="\u0411\u044B\u043B\u043E \u0432 \u043F\u0438\u0441\u044C\u043C\u0435 ' + esc(when(item.sent_at)) + '">\u041F\u043E\u043A\u0430\u0437\u0430\u043D\u043E ' + esc(day(item.sent_at)) + "</span>"
+        : (anySeen ? '<span class="badge fresh">\u041D\u043E\u0432\u043E\u0435</span>' : "");
+      return '<div class="badges"><span class="badge src">' + SOURCE[item.source] + "</span>" + head + seen +
         item.topics.map(function (t) { return '<span class="badge">' + esc(t) + "</span>"; }).join("") + "</div>";
+    }
+    function day(value) {
+      const dt = value ? new Date(value) : null;
+      if (!dt || Number.isNaN(dt.getTime())) return "";
+      return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "short", timeZone: DATA.timezone });
+    }
+    function shots(item) {
+      if (!item.media.length) return "";
+      const extra = item.media_total - item.media.length;
+      return '<div class="shots">' + item.media.map(function (src, i) {
+        const more = i === item.media.length - 1 && extra > 0 ? '<span class="more">+' + extra + "</span>" : "";
+        return '<a href="' + esc(item.url) + '" target="_blank" rel="noopener" title="\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u043E\u0441\u0442"><img src="' + esc(src) + '" alt="\u0424\u043E\u0442\u043E \u0438\u0437 \u043F\u043E\u0441\u0442\u0430">' + more + "</a>";
+      }).join("") + "</div>";
     }
     function card(item) {
       return '<article class="item' + (item.relevant === false ? " irrelevant" : "") + '">' +
@@ -34543,20 +34580,21 @@ var TEMPLATE2 = `<!DOCTYPE html>
         '<div class="place">' + esc(item.place) + "</div>" + badges(item) +
         (item.summary ? '<div class="gist">' + esc(item.summary) + "</div>" : "") +
         (item.reply_to ? '<div class="quote">' + esc(item.reply_to.slice(0, 400)) + "</div>" : "") +
-        '<div class="text">' + esc(item.text) + "</div>" +
+        '<div class="text">' + esc(item.text) + "</div>" + shots(item) +
         '<div class="foot">' + (item.source === "2gis" ? "<span>" + (item.org_answered ? "\u2713 \u0435\u0441\u0442\u044C \u043E\u0442\u0432\u0435\u0442 \u041D\u0430\u0440\u0445\u043E\u0437\u0430" : "\u0431\u0435\u0437 \u043E\u0442\u0432\u0435\u0442\u0430 \u041D\u0430\u0440\u0445\u043E\u0437\u0430") + "</span>" : "") +
         '<a href="' + esc(item.url) + '" target="_blank" rel="noopener">\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0432 ' + SOURCE[item.source] + "</a></div></article>";
     }
     function table(items) {
       return '<div class="table-wrap"><table><thead><tr><th>\u0414\u0430\u0442\u0430</th><th>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th>\u0410\u0432\u0442\u043E\u0440 / \u043C\u0435\u0441\u0442\u043E</th><th>\u2605</th>' +
-        "<th>\u0422\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C</th><th>\u0422\u0435\u043C\u044B</th><th>\u0421\u0443\u0442\u044C / \u0442\u0435\u043A\u0441\u0442</th><th></th></tr></thead><tbody>" +
+        "<th>\u0422\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C</th><th>\u0422\u0435\u043C\u044B</th><th>\u0421\u0443\u0442\u044C / \u0442\u0435\u043A\u0441\u0442</th><th>\u0424\u043E\u0442\u043E</th><th></th></tr></thead><tbody>" +
         items.map(function (item) {
           const kind = item.relevant === false ? "irrelevant" : (item.sentiment || "");
           const label = item.relevant === false ? "\u041D\u0435\u0440\u0435\u043B\u0435\u0432\u0430\u043D\u0442\u043D\u044B\u0439" : (LABEL[item.sentiment] || "\u2014");
           return '<tr class="row-' + kind + '"><td class="nw">' + esc(when(item.published_at)) + "</td><td>" + SOURCE[item.source] + "</td>" +
             "<td>" + esc(item.author) + "<br><span class=\\"when\\">" + esc(item.place) + "</span></td><td>" + (item.rating || "\u2014") + "</td>" +
             "<td>" + label + "</td><td>" + esc(item.topics.join(", ")) + "</td>" +
-            "<td>" + esc(item.summary || item.text.slice(0, 220)) + "</td>" +
+            "<td>" + esc(item.summary || item.text.slice(0, 220)) + (item.sent_at ? '<br><span class="when">\u043F\u043E\u043A\u0430\u0437\u0430\u043D\u043E ' + esc(day(item.sent_at)) + "</span>" : "") + "</td>" +
+            "<td>" + (item.media.length ? '<img class="thumb" src="' + esc(item.media[0]) + '" alt="">' : "") + "</td>" +
             '<td><a href="' + esc(item.url) + '" target="_blank" rel="noopener">\u043E\u0442\u043A\u0440\u044B\u0442\u044C</a></td></tr>';
         }).join("") + "</tbody></table></div>";
     }
@@ -34567,11 +34605,16 @@ var TEMPLATE2 = `<!DOCTYPE html>
         if (!needle) return true;
         return [item.author, item.place, item.text, item.summary, item.topics.join(" "), item.reply_to].join(" ").toLowerCase().includes(needle);
       });
+      document.querySelectorAll("#seen button").forEach(function (b) {
+        const c = b.querySelector(".count");
+        if (c) c.textContent = base.filter(function (i) { return (b.dataset.v === "seen") === Boolean(i.sent_at); }).length;
+      });
+      const bySeen = base.filter(function (i) { return !state.seen || (state.seen === "seen") === Boolean(i.sent_at); });
       document.querySelectorAll("#sources button").forEach(function (b) {
         const c = b.querySelector(".count");
-        if (c) c.textContent = base.filter(function (i) { return i.source === b.dataset.v; }).length;
+        if (c) c.textContent = bySeen.filter(function (i) { return i.source === b.dataset.v; }).length;
       });
-      const bySource = base.filter(function (i) { return !state.source || i.source === state.source; });
+      const bySource = bySeen.filter(function (i) { return !state.source || i.source === state.source; });
       document.querySelectorAll("#sentiments button").forEach(function (b) {
         const c = b.querySelector(".count");
         if (c) c.textContent = bySource.filter(function (i) { return i.relevant !== false && i.sentiment === b.dataset.v; }).length;
@@ -34592,7 +34635,9 @@ var TEMPLATE2 = `<!DOCTYPE html>
     }
     segment("sources", "source");
     segment("sentiments", "sentiment");
+    segment("seen", "seen");
     segment("views", "view");
+    document.querySelectorAll("#seen button").forEach(function (b) { b.classList.toggle("active", b.dataset.v === state.seen); });
     search.oninput = render;
     showIrrelevant.onchange = render;
     render();
@@ -35006,18 +35051,76 @@ async function buildOverview(root, items, hours, options = {}) {
   };
 }
 
+// src/report/previews.ts
+import { existsSync as existsSync5, readFileSync as readFileSync5, statSync } from "node:fs";
+import { extname, resolve as resolve4, sep } from "node:path";
+var PER_POST = 4;
+var MAX_FILE = 200 * 1024;
+var BUDGET = 6 * 1024 * 1024;
+var MIME = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
+function embedPreviews(items, threadsRoot2) {
+  const dataDir = threadsRoot2 ? resolve4(threadsRoot2, "data") : null;
+  let used = 0;
+  for (const item of items) {
+    const paths2 = item.media;
+    item.media = [];
+    if (!dataDir) continue;
+    for (const path3 of paths2.slice(0, PER_POST)) {
+      const file = resolve4(dataDir, path3);
+      const mime = MIME[extname(file).toLowerCase()];
+      if (!mime || !file.startsWith(dataDir + sep) || !existsSync5(file)) continue;
+      const size = statSync(file).size;
+      if (size > MAX_FILE || used + size > BUDGET) continue;
+      used += size;
+      item.media.push(`data:${mime};base64,${readFileSync5(file).toString("base64")}`);
+    }
+  }
+}
+
+// src/report/sent.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync3, readFileSync as readFileSync6, writeFileSync as writeFileSync5 } from "node:fs";
+import { dirname as dirname2, join as join5 } from "node:path";
+var sentPath = (root) => join5(paths(root).data, "report-sent.json");
+function loadSent(root) {
+  const file = sentPath(root);
+  if (!existsSync6(file)) return {};
+  try {
+    const parsed = JSON.parse(readFileSync6(file, "utf8"));
+    return parsed && typeof parsed.sent === "object" && parsed.sent ? parsed.sent : {};
+  } catch {
+    return {};
+  }
+}
+function markSeen(root, items) {
+  const sent = loadSent(root);
+  for (const item of items) item.sent_at = sent[item.id] ?? null;
+}
+function recordSent(root, items, at) {
+  const sent = loadSent(root);
+  let added = 0;
+  for (const item of items) {
+    if (sent[item.id]) continue;
+    sent[item.id] = at;
+    added += 1;
+  }
+  const file = sentPath(root);
+  mkdirSync3(dirname2(file), { recursive: true });
+  writeFileSync5(file, JSON.stringify({ sent }, null, 2) + "\n", "utf8");
+  return added;
+}
+
 // src/report/sources.ts
-import { existsSync as existsSync5, readFileSync as readFileSync5 } from "node:fs";
+import { existsSync as existsSync7, readFileSync as readFileSync7 } from "node:fs";
 import { homedir as homedir2 } from "node:os";
-import { join as join5, resolve as resolve4 } from "node:path";
+import { join as join6, resolve as resolve5 } from "node:path";
 function threadsRoot(root) {
   const configured = loadConfig(root).report.threads_root.trim() || process.env.NARXOZ_SCRAPER_ROOT?.trim();
-  const candidates = configured ? [resolve4(root, configured)] : [resolve4(root, "..", "threads"), join5(homedir2(), ".narxoz-threads")];
-  return candidates.find((dir) => existsSync5(join5(dir, "data", "posts.jsonl"))) ?? (configured ? candidates[0] : null);
+  const candidates = configured ? [resolve5(root, configured)] : [resolve5(root, "..", "threads"), join6(homedir2(), ".narxoz-threads")];
+  return candidates.find((dir) => existsSync7(join6(dir, "data", "posts.jsonl"))) ?? (configured ? candidates[0] : null);
 }
 function reportPath(root) {
   const configured = loadConfig(root).report.output.trim() || process.env.NARXOZ_REPORT_PATH?.trim();
-  return configured ? resolve4(root, configured) : join5(paths(root).data, "report.html");
+  return configured ? resolve5(root, configured) : join6(paths(root).data, "report.html");
 }
 function fromReviews(root) {
   const [reviews] = mergeReviews(loadExisting(root), []);
@@ -35035,14 +35138,17 @@ function fromReviews(root) {
     relevant: review.analysis?.relevant ?? null,
     sentiment: review.analysis?.sentiment ?? null,
     topics: review.analysis?.topics ?? [],
-    summary: review.analysis?.summary ?? ""
+    summary: review.analysis?.summary ?? "",
+    media: [],
+    media_total: 0,
+    sent_at: null
   }));
 }
 function fromPosts(dir) {
-  const file = join5(dir, "data", "posts.jsonl");
-  if (!existsSync5(file)) return [];
+  const file = join6(dir, "data", "posts.jsonl");
+  if (!existsSync7(file)) return [];
   const items = [];
-  for (const line of readFileSync5(file, "utf8").split(/\r?\n/)) {
+  for (const line of readFileSync7(file, "utf8").split(/\r?\n/)) {
     if (!line.trim()) continue;
     let post;
     try {
@@ -35054,6 +35160,8 @@ function fromPosts(dir) {
     if (!key) continue;
     const analysis = post.analysis && typeof post.analysis === "object" ? post.analysis : null;
     const parent = post.parent && typeof post.parent === "object" ? post.parent : null;
+    const images = Array.isArray(post.images) ? post.images.map(String) : [];
+    const thumbs = Array.isArray(post.thumbs) ? post.thumbs.map(String) : [];
     items.push({
       source: "threads",
       id: `threads:${key}`,
@@ -35068,7 +35176,11 @@ function fromPosts(dir) {
       relevant: typeof analysis?.relevant === "boolean" ? analysis.relevant : null,
       sentiment: ["positive", "neutral", "negative"].includes(analysis?.sentiment) ? analysis.sentiment : null,
       topics: Array.isArray(analysis?.topics) ? analysis.topics.map(String) : [],
-      summary: String(analysis?.summary || "")
+      summary: String(analysis?.summary || ""),
+      // Thumbnails when the scraper made them; full photos are embedded only if small (previews.ts).
+      media: thumbs.length ? thumbs : images,
+      media_total: Math.max(images.length, thumbs.length, Array.isArray(post.image_urls) ? post.image_urls.length : 0),
+      sent_at: null
     });
   }
   return items;
@@ -35097,10 +35209,14 @@ async function generateReport(root, options = {}) {
   const items = inPeriod(all, hours);
   const stats = computeStats(items, hours, timezone);
   const { overview, errors: errors2 } = await buildOverview(root, items, hours, { useLlm: options.overview });
+  markSeen(root, items);
+  embedPreviews(items, threads_root);
+  const fresh = items.filter((item) => !item.sent_at).length;
   const file = reportPath(root);
-  mkdirSync3(dirname2(file), { recursive: true });
+  mkdirSync4(dirname3(file), { recursive: true });
+  const generatedAt = (/* @__PURE__ */ new Date()).toISOString();
   const html = renderReport({
-    generated_at: (/* @__PURE__ */ new Date()).toISOString(),
+    generated_at: generatedAt,
     timezone,
     period_hours: hours,
     period_label: periodWords(hours),
@@ -35109,7 +35225,7 @@ async function generateReport(root, options = {}) {
     threads_connected: Boolean(threads_root),
     items
   });
-  writeFileSync5(file, html, "utf8");
+  writeFileSync6(file, html, "utf8");
   let email2 = null;
   if (options.email) {
     const { to, from, transport } = smtpSetup(root, options.to);
@@ -35120,7 +35236,8 @@ async function generateReport(root, options = {}) {
       html: combinedEmailHtml(overview, stats, items, hours, timezone),
       attachments: [{ filename: "narxoz-report.html", content: html, contentType: "text/html" }]
     });
-    email2 = { sent_to: to, from, message_id: info.messageId };
+    const recorded = recordSent(root, items, generatedAt);
+    email2 = { sent_to: to, from, message_id: info.messageId, newly_recorded: recorded };
   }
   if (!threads_root) {
     errors2.push("Threads: data/posts.jsonl \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u2014 \u0437\u0430\u0434\u0430\u0439\u0442\u0435 report.threads_root \u0438\u043B\u0438 NARXOZ_SCRAPER_ROOT");
@@ -35133,6 +35250,8 @@ async function generateReport(root, options = {}) {
     relevant: stats.relevant,
     irrelevant: stats.irrelevant,
     not_analyzed: stats.not_analyzed,
+    new_mentions: fresh,
+    seen_before: items.length - fresh,
     sentiment: stats.sentiment,
     by_source: stats.by_source,
     overview_model: overview.model,
@@ -35165,7 +35284,7 @@ async function fetchText(url) {
 async function fetchJson(url) {
   return await (await get(url, "application/json")).json();
 }
-var sleep = (ms) => new Promise((resolve5) => setTimeout(resolve5, ms));
+var sleep = (ms) => new Promise((resolve6) => setTimeout(resolve6, ms));
 
 // src/scraper/parse.ts
 function isoUtc(value) {
@@ -35704,7 +35823,7 @@ function lastRun(runsDir) {
     return null;
   }
   try {
-    const run = JSON.parse(readFileSync6(join6(runsDir, latest), "utf8"));
+    const run = JSON.parse(readFileSync8(join7(runsDir, latest), "utf8"));
     return { ran_at: run.ran_at, found: run.found, new: run.new, total: run.total, errors: run.errors };
   } catch {
     return null;
@@ -35768,7 +35887,7 @@ server.tool(
           rating,
           reviews_count
         })),
-        reviews_collected: existsSync6(loc.reviewsJsonl),
+        reviews_collected: existsSync8(loc.reviewsJsonl),
         llm: {
           enabled: cfg.llm.enabled,
           base_url: cfg.llm.base_url,

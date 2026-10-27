@@ -7,6 +7,9 @@ import { loadExisting, mergeReviews } from "../scraper/store.js";
 
 export type Source = "2gis" | "threads";
 
+/** A report with this many mentions or fewer shows every one in full, whether or not an earlier email had it. */
+export const FULL_TEXT_MAX = 10;
+
 /** One mention from either scraper, in the shape the combined report needs. */
 export type Item = {
   source: Source;

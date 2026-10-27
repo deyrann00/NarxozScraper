@@ -1,6 +1,6 @@
 import { periodLabel } from "../scraper/email.js";
 import type { Overview, Stats } from "./overview.js";
-import type { Item, Source } from "./sources.js";
+import { FULL_TEXT_MAX, type Item, type Source } from "./sources.js";
 
 const COLORS = { negative: "#e34948", neutral: "#8a8982", positive: "#2a78d6" } as const;
 const SOURCE: Record<Source, string> = { "2gis": "2ГИС", threads: "Threads" };
@@ -79,6 +79,15 @@ export function combinedEmailHtml(
         `<td ${TD}><a href="${esc(item.url)}" style="color:#1c5cab">открыть</a></td></tr>`
     )
     .join("");
+  const everyRow = items
+    .map(
+      (item) =>
+        `<tr><td ${TD}>${esc(when(item.published_at, timezone))}</td><td ${TD}>${SOURCE[item.source]}</td>` +
+        `<td ${TD}>${esc(item.author)}<br>${esc(item.place)}</td>` +
+        `<td ${TD}>${esc(item.text).replace(/\n/g, "<br>")}</td>` +
+        `<td ${TD}><a href="${esc(item.url)}" style="color:#1c5cab">открыть</a></td></tr>`
+    )
+    .join("");
   return [
     '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"></head>',
     '<body style="margin:0;background:#f5f5f3;font-family:Segoe UI,Arial,sans-serif;color:#0b0b0b">',
@@ -108,6 +117,13 @@ export function combinedEmailHtml(
         '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%">' +
         `<tr><th ${TH}>Дата</th><th ${TH}>Источник</th><th ${TH}>Место</th><th ${TH}>★</th><th ${TH}>Суть</th><th ${TH}></th></tr>` +
         negativeRows +
+        "</table>"
+      : "",
+    items.length && items.length <= FULL_TEXT_MAX
+      ? `<h2 style="font-size:16px;margin:20px 0 6px">Все упоминания · ${items.length}</h2>` +
+        '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%">' +
+        `<tr><th ${TH}>Дата</th><th ${TH}>Источник</th><th ${TH}>Автор</th><th ${TH}>Текст</th><th ${TH}></th></tr>` +
+        everyRow +
         "</table>"
       : "",
     seenNegatives

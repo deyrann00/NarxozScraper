@@ -1,5 +1,5 @@
 import type { Overview, Stats } from "./overview.js";
-import type { Item } from "./sources.js";
+import { FULL_TEXT_MAX, type Item } from "./sources.js";
 
 export type ReportPayload = {
   generated_at: string;
@@ -225,7 +225,8 @@ const TEMPLATE = `<!DOCTYPE html>
     // Open on new mentions when earlier emails already showed some of the period.
     const anySeen = DATA.items.some(function (i) { return i.sent_at; });
     const anyNew = DATA.items.some(function (i) { return !i.sent_at; });
-    const state = { source: "", sentiment: "", seen: anySeen && anyNew ? "new" : "", view: "feed" };
+    // A small report lists everything: "new only" would hide the posts an earlier email already had.
+    const state = { source: "", sentiment: "", seen: !DATA.full_text && anySeen && anyNew ? "new" : "", view: "feed" };
 
     function esc(text) {
       return String(text == null ? "" : text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -371,7 +372,7 @@ const TEMPLATE = `<!DOCTYPE html>
           return '<tr class="row-' + kind + '"><td class="nw">' + esc(when(item.published_at)) + "</td><td>" + SOURCE[item.source] + "</td>" +
             "<td>" + esc(item.author) + "<br><span class=\\"when\\">" + esc(item.place) + "</span></td><td>" + (item.rating || "—") + "</td>" +
             "<td>" + label + "</td><td>" + esc(item.topics.join(", ")) + "</td>" +
-            "<td>" + esc(item.summary || item.text.slice(0, 220)) + (item.sent_at ? '<br><span class="when">показано ' + esc(day(item.sent_at)) + "</span>" : "") + "</td>" +
+            "<td>" + esc(DATA.full_text ? item.text : item.summary || item.text.slice(0, 220)) + (item.sent_at ? '<br><span class="when">показано ' + esc(day(item.sent_at)) + "</span>" : "") + "</td>" +
             "<td>" + (item.media.length ? '<img class="thumb" src="' + esc(item.media[0]) + '" alt="">' : "") + "</td>" +
             '<td><a href="' + esc(item.url) + '" target="_blank" rel="noopener">открыть</a></td></tr>';
         }).join("") + "</tbody></table></div>";
@@ -426,6 +427,6 @@ const TEMPLATE = `<!DOCTYPE html>
 
 export function renderReport(payload: ReportPayload): string {
   // "<" is escaped so mention text cannot close the inline <script>.
-  const json = JSON.stringify(payload).replace(/</g, "\\u003c");
+  const json = JSON.stringify({ ...payload, full_text: payload.items.length <= FULL_TEXT_MAX }).replace(/</g, "\\u003c");
   return TEMPLATE.replace("__PAYLOAD__", () => json);
 }

@@ -34178,6 +34178,98 @@ async function sendReport(root, options = {}) {
   return { sent_to: to, from, period_hours: hours, message_id: info.messageId, ...counts };
 }
 
+// src/report/sources.ts
+import { existsSync as existsSync4, readFileSync as readFileSync4 } from "node:fs";
+import { homedir as homedir2 } from "node:os";
+import { join as join4, resolve as resolve4 } from "node:path";
+var FULL_TEXT_MAX = 10;
+function threadsRoot(root) {
+  const configured = loadConfig(root).report.threads_root.trim() || process.env.NARXOZ_SCRAPER_ROOT?.trim();
+  const candidates = configured ? [resolve4(root, configured)] : [resolve4(root, "..", "threads"), join4(homedir2(), ".narxoz-threads")];
+  return candidates.find((dir) => existsSync4(join4(dir, "data", "posts.jsonl"))) ?? (configured ? candidates[0] : null);
+}
+function reportPath(root) {
+  const configured = loadConfig(root).report.output.trim() || process.env.NARXOZ_REPORT_PATH?.trim();
+  return configured ? resolve4(root, configured) : join4(paths(root).data, "report.html");
+}
+function fromReviews(root) {
+  const [reviews] = mergeReviews(loadExisting(root), []);
+  return reviews.map((review) => ({
+    source: "2gis",
+    id: `2gis:${review.id}`,
+    published_at: review.published_at,
+    author: review.author || "",
+    place: review.branch_name || "",
+    text: review.text || "",
+    rating: review.rating,
+    url: review.url,
+    org_answered: review.replies.some((reply) => reply.from_org),
+    reply_to: "",
+    relevant: review.analysis?.relevant ?? null,
+    sentiment: review.analysis?.sentiment ?? null,
+    topics: review.analysis?.topics ?? [],
+    summary: review.analysis?.summary ?? "",
+    media: [],
+    media_total: 0,
+    sent_at: null
+  }));
+}
+function fromPosts(dir) {
+  const file = join4(dir, "data", "posts.jsonl");
+  if (!existsSync4(file)) return [];
+  const items = [];
+  for (const line of readFileSync4(file, "utf8").split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let post;
+    try {
+      post = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const key = String(post.id || post.code || post.url || "");
+    if (!key) continue;
+    const analysis = post.analysis && typeof post.analysis === "object" ? post.analysis : null;
+    const parent = post.parent && typeof post.parent === "object" ? post.parent : null;
+    const images = Array.isArray(post.images) ? post.images.map(String) : [];
+    const thumbs = Array.isArray(post.thumbs) ? post.thumbs.map(String) : [];
+    items.push({
+      source: "threads",
+      id: `threads:${key}`,
+      published_at: post.published_at ?? null,
+      author: post.username ? `@${post.username}` : "",
+      place: parent?.username ? `\u043E\u0442\u0432\u0435\u0442 @${parent.username}` : "Threads",
+      text: String(post.text || ""),
+      rating: null,
+      url: String(post.url || ""),
+      org_answered: false,
+      reply_to: String(parent?.text || ""),
+      relevant: typeof analysis?.relevant === "boolean" ? analysis.relevant : null,
+      sentiment: ["positive", "neutral", "negative"].includes(analysis?.sentiment) ? analysis.sentiment : null,
+      topics: Array.isArray(analysis?.topics) ? analysis.topics.map(String) : [],
+      summary: String(analysis?.summary || ""),
+      // Thumbnails when the scraper made them; full photos are embedded only if small (previews.ts).
+      media: thumbs.length ? thumbs : images,
+      media_total: Math.max(images.length, thumbs.length, Array.isArray(post.image_urls) ? post.image_urls.length : 0),
+      sent_at: null
+    });
+  }
+  return items;
+}
+function loadItems(root) {
+  const dir = threadsRoot(root);
+  const items = [...fromReviews(root), ...dir ? fromPosts(dir) : []];
+  items.sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
+  return { items, threads_root: dir };
+}
+function inPeriod(items, hours) {
+  if (!hours || hours <= 0) return items;
+  const cutoff = Date.now() - hours * 3600 * 1e3;
+  return items.filter((item) => {
+    const ms = Date.parse(String(item.published_at || ""));
+    return !Number.isNaN(ms) && ms >= cutoff;
+  });
+}
+
 // src/report/email.ts
 var COLORS2 = { negative: "#e34948", neutral: "#8a8982", positive: "#2a78d6" };
 var SOURCE = { "2gis": "2\u0413\u0418\u0421", threads: "Threads" };
@@ -34209,6 +34301,9 @@ function combinedEmailHtml(overview, stats, items, hours, timezone) {
   const negativeRows = negatives.map(
     (item) => `<tr><td ${TD2}>${esc3(when(item.published_at, timezone))}</td><td ${TD2}>${SOURCE[item.source]}</td><td ${TD2}>${esc3(item.place)}</td><td ${TDN2}>${item.rating ?? "\u2014"}</td><td ${TD2}>${esc3(item.summary || item.text.slice(0, 240))}</td><td ${TD2}><a href="${esc3(item.url)}" style="color:#1c5cab">\u043E\u0442\u043A\u0440\u044B\u0442\u044C</a></td></tr>`
   ).join("");
+  const everyRow = items.map(
+    (item) => `<tr><td ${TD2}>${esc3(when(item.published_at, timezone))}</td><td ${TD2}>${SOURCE[item.source]}</td><td ${TD2}>${esc3(item.author)}<br>${esc3(item.place)}</td><td ${TD2}>${esc3(item.text).replace(/\n/g, "<br>")}</td><td ${TD2}><a href="${esc3(item.url)}" style="color:#1c5cab">\u043E\u0442\u043A\u0440\u044B\u0442\u044C</a></td></tr>`
+  ).join("");
   return [
     '<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"></head>',
     '<body style="margin:0;background:#f5f5f3;font-family:Segoe UI,Arial,sans-serif;color:#0b0b0b">',
@@ -34229,6 +34324,7 @@ function combinedEmailHtml(overview, stats, items, hours, timezone) {
     sourceRow("threads"),
     "</table>",
     negatives.length ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS2.negative}">\u041D\u043E\u0432\u044B\u0435 \u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \xB7 ${negatives.length}</h2><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr><th ${TH2}>\u0414\u0430\u0442\u0430</th><th ${TH2}>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th ${TH2}>\u041C\u0435\u0441\u0442\u043E</th><th ${TH2}>\u2605</th><th ${TH2}>\u0421\u0443\u0442\u044C</th><th ${TH2}></th></tr>` + negativeRows + "</table>" : "",
+    items.length && items.length <= FULL_TEXT_MAX ? `<h2 style="font-size:16px;margin:20px 0 6px">\u0412\u0441\u0435 \u0443\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F \xB7 ${items.length}</h2><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%"><tr><th ${TH2}>\u0414\u0430\u0442\u0430</th><th ${TH2}>\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A</th><th ${TH2}>\u0410\u0432\u0442\u043E\u0440</th><th ${TH2}>\u0422\u0435\u043A\u0441\u0442</th><th ${TH2}></th></tr>` + everyRow + "</table>" : "",
     seenNegatives ? `<p style="color:#6b6a65;font-size:13px">\u0415\u0449\u0451 ${seenNegatives} \u043D\u0435\u0433\u0430\u0442\u0438\u0432\u043D\u044B\u0445 \u0443\u0436\u0435 \u0431\u044B\u043B\u0438 \u0432 \u043F\u0440\u043E\u0448\u043B\u044B\u0445 \u043F\u0438\u0441\u044C\u043C\u0430\u0445 \u2014 \u043E\u043D\u0438 \u0432 \u043E\u0442\u0447\u0451\u0442\u0435, \u0444\u0438\u043B\u044C\u0442\u0440 \xAB\u0420\u0430\u043D\u0435\u0435 \u043F\u043E\u043A\u0430\u0437\u0430\u043D\u043D\u044B\u0435\xBB.</p>` : "",
     "</div>",
     '<p style="color:#6b6a65;font-size:12px;margin-top:16px">\u041F\u043E\u043B\u043D\u044B\u0439 \u043E\u0442\u0447\u0451\u0442 \u0441 \u0433\u0440\u0430\u0444\u0438\u043A\u0430\u043C\u0438 \u0438 \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u043C\u0438 \u2014 \u0432\u043E \u0432\u043B\u043E\u0436\u0435\u043D\u0438\u0438 (report.html).</p>',
@@ -34447,7 +34543,8 @@ var TEMPLATE2 = `<!DOCTYPE html>
     // Open on new mentions when earlier emails already showed some of the period.
     const anySeen = DATA.items.some(function (i) { return i.sent_at; });
     const anyNew = DATA.items.some(function (i) { return !i.sent_at; });
-    const state = { source: "", sentiment: "", seen: anySeen && anyNew ? "new" : "", view: "feed" };
+    // A small report lists everything: "new only" would hide the posts an earlier email already had.
+    const state = { source: "", sentiment: "", seen: !DATA.full_text && anySeen && anyNew ? "new" : "", view: "feed" };
 
     function esc(text) {
       return String(text == null ? "" : text).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -34593,7 +34690,7 @@ var TEMPLATE2 = `<!DOCTYPE html>
           return '<tr class="row-' + kind + '"><td class="nw">' + esc(when(item.published_at)) + "</td><td>" + SOURCE[item.source] + "</td>" +
             "<td>" + esc(item.author) + "<br><span class=\\"when\\">" + esc(item.place) + "</span></td><td>" + (item.rating || "\u2014") + "</td>" +
             "<td>" + label + "</td><td>" + esc(item.topics.join(", ")) + "</td>" +
-            "<td>" + esc(item.summary || item.text.slice(0, 220)) + (item.sent_at ? '<br><span class="when">\u043F\u043E\u043A\u0430\u0437\u0430\u043D\u043E ' + esc(day(item.sent_at)) + "</span>" : "") + "</td>" +
+            "<td>" + esc(DATA.full_text ? item.text : item.summary || item.text.slice(0, 220)) + (item.sent_at ? '<br><span class="when">\u043F\u043E\u043A\u0430\u0437\u0430\u043D\u043E ' + esc(day(item.sent_at)) + "</span>" : "") + "</td>" +
             "<td>" + (item.media.length ? '<img class="thumb" src="' + esc(item.media[0]) + '" alt="">' : "") + "</td>" +
             '<td><a href="' + esc(item.url) + '" target="_blank" rel="noopener">\u043E\u0442\u043A\u0440\u044B\u0442\u044C</a></td></tr>';
         }).join("") + "</tbody></table></div>";
@@ -34646,14 +34743,14 @@ var TEMPLATE2 = `<!DOCTYPE html>
 </html>
 `;
 function renderReport(payload) {
-  const json2 = JSON.stringify(payload).replace(/</g, "\\u003c");
+  const json2 = JSON.stringify({ ...payload, full_text: payload.items.length <= FULL_TEXT_MAX }).replace(/</g, "\\u003c");
   return TEMPLATE2.replace("__PAYLOAD__", () => json2);
 }
 
 // src/report/overview.ts
 import { createHash as createHash2 } from "node:crypto";
-import { existsSync as existsSync4, readFileSync as readFileSync4, writeFileSync as writeFileSync4 } from "node:fs";
-import { join as join4 } from "node:path";
+import { existsSync as existsSync5, readFileSync as readFileSync5, writeFileSync as writeFileSync4 } from "node:fs";
+import { join as join5 } from "node:path";
 
 // src/scraper/analyze.ts
 import { createHash } from "node:crypto";
@@ -34998,7 +35095,7 @@ function userPrompt2(items) {
   });
 }
 function cacheFile(root) {
-  return join4(paths(root).data, "report-overview.json");
+  return join5(paths(root).data, "report-overview.json");
 }
 async function buildOverview(root, items, hours, options = {}) {
   const { llm, report } = loadConfig(root);
@@ -35017,9 +35114,9 @@ async function buildOverview(root, items, hours, options = {}) {
   }
   const key = createHash2("sha1").update(JSON.stringify([llm.model, hours, relevant.slice(0, MAX_ITEMS).map((item) => [item.id, item.sentiment, item.summary])])).digest("hex");
   const file = cacheFile(root);
-  if (existsSync4(file)) {
+  if (existsSync5(file)) {
     try {
-      const cached2 = JSON.parse(readFileSync4(file, "utf8"));
+      const cached2 = JSON.parse(readFileSync5(file, "utf8"));
       if (cached2.key === key) return { overview: cached2.overview, errors: [] };
     } catch {
     }
@@ -35052,40 +35149,40 @@ async function buildOverview(root, items, hours, options = {}) {
 }
 
 // src/report/previews.ts
-import { existsSync as existsSync5, readFileSync as readFileSync5, statSync } from "node:fs";
-import { extname, resolve as resolve4, sep } from "node:path";
+import { existsSync as existsSync6, readFileSync as readFileSync6, statSync } from "node:fs";
+import { extname, resolve as resolve5, sep } from "node:path";
 var PER_POST = 4;
 var MAX_FILE = 200 * 1024;
 var BUDGET = 6 * 1024 * 1024;
 var MIME = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
 function embedPreviews(items, threadsRoot2) {
-  const dataDir = threadsRoot2 ? resolve4(threadsRoot2, "data") : null;
+  const dataDir = threadsRoot2 ? resolve5(threadsRoot2, "data") : null;
   let used = 0;
   for (const item of items) {
     const paths2 = item.media;
     item.media = [];
     if (!dataDir) continue;
     for (const path3 of paths2.slice(0, PER_POST)) {
-      const file = resolve4(dataDir, path3);
+      const file = resolve5(dataDir, path3);
       const mime = MIME[extname(file).toLowerCase()];
-      if (!mime || !file.startsWith(dataDir + sep) || !existsSync5(file)) continue;
+      if (!mime || !file.startsWith(dataDir + sep) || !existsSync6(file)) continue;
       const size = statSync(file).size;
       if (size > MAX_FILE || used + size > BUDGET) continue;
       used += size;
-      item.media.push(`data:${mime};base64,${readFileSync5(file).toString("base64")}`);
+      item.media.push(`data:${mime};base64,${readFileSync6(file).toString("base64")}`);
     }
   }
 }
 
 // src/report/sent.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync3, readFileSync as readFileSync6, writeFileSync as writeFileSync5 } from "node:fs";
-import { dirname as dirname2, join as join5 } from "node:path";
-var sentPath = (root) => join5(paths(root).data, "report-sent.json");
+import { existsSync as existsSync7, mkdirSync as mkdirSync3, readFileSync as readFileSync7, writeFileSync as writeFileSync5 } from "node:fs";
+import { dirname as dirname2, join as join6 } from "node:path";
+var sentPath = (root) => join6(paths(root).data, "report-sent.json");
 function loadSent(root) {
   const file = sentPath(root);
-  if (!existsSync6(file)) return {};
+  if (!existsSync7(file)) return {};
   try {
-    const parsed = JSON.parse(readFileSync6(file, "utf8"));
+    const parsed = JSON.parse(readFileSync7(file, "utf8"));
     return parsed && typeof parsed.sent === "object" && parsed.sent ? parsed.sent : {};
   } catch {
     return {};
@@ -35107,97 +35204,6 @@ function recordSent(root, items, at) {
   mkdirSync3(dirname2(file), { recursive: true });
   writeFileSync5(file, JSON.stringify({ sent }, null, 2) + "\n", "utf8");
   return added;
-}
-
-// src/report/sources.ts
-import { existsSync as existsSync7, readFileSync as readFileSync7 } from "node:fs";
-import { homedir as homedir2 } from "node:os";
-import { join as join6, resolve as resolve5 } from "node:path";
-function threadsRoot(root) {
-  const configured = loadConfig(root).report.threads_root.trim() || process.env.NARXOZ_SCRAPER_ROOT?.trim();
-  const candidates = configured ? [resolve5(root, configured)] : [resolve5(root, "..", "threads"), join6(homedir2(), ".narxoz-threads")];
-  return candidates.find((dir) => existsSync7(join6(dir, "data", "posts.jsonl"))) ?? (configured ? candidates[0] : null);
-}
-function reportPath(root) {
-  const configured = loadConfig(root).report.output.trim() || process.env.NARXOZ_REPORT_PATH?.trim();
-  return configured ? resolve5(root, configured) : join6(paths(root).data, "report.html");
-}
-function fromReviews(root) {
-  const [reviews] = mergeReviews(loadExisting(root), []);
-  return reviews.map((review) => ({
-    source: "2gis",
-    id: `2gis:${review.id}`,
-    published_at: review.published_at,
-    author: review.author || "",
-    place: review.branch_name || "",
-    text: review.text || "",
-    rating: review.rating,
-    url: review.url,
-    org_answered: review.replies.some((reply) => reply.from_org),
-    reply_to: "",
-    relevant: review.analysis?.relevant ?? null,
-    sentiment: review.analysis?.sentiment ?? null,
-    topics: review.analysis?.topics ?? [],
-    summary: review.analysis?.summary ?? "",
-    media: [],
-    media_total: 0,
-    sent_at: null
-  }));
-}
-function fromPosts(dir) {
-  const file = join6(dir, "data", "posts.jsonl");
-  if (!existsSync7(file)) return [];
-  const items = [];
-  for (const line of readFileSync7(file, "utf8").split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    let post;
-    try {
-      post = JSON.parse(line);
-    } catch {
-      continue;
-    }
-    const key = String(post.id || post.code || post.url || "");
-    if (!key) continue;
-    const analysis = post.analysis && typeof post.analysis === "object" ? post.analysis : null;
-    const parent = post.parent && typeof post.parent === "object" ? post.parent : null;
-    const images = Array.isArray(post.images) ? post.images.map(String) : [];
-    const thumbs = Array.isArray(post.thumbs) ? post.thumbs.map(String) : [];
-    items.push({
-      source: "threads",
-      id: `threads:${key}`,
-      published_at: post.published_at ?? null,
-      author: post.username ? `@${post.username}` : "",
-      place: parent?.username ? `\u043E\u0442\u0432\u0435\u0442 @${parent.username}` : "Threads",
-      text: String(post.text || ""),
-      rating: null,
-      url: String(post.url || ""),
-      org_answered: false,
-      reply_to: String(parent?.text || ""),
-      relevant: typeof analysis?.relevant === "boolean" ? analysis.relevant : null,
-      sentiment: ["positive", "neutral", "negative"].includes(analysis?.sentiment) ? analysis.sentiment : null,
-      topics: Array.isArray(analysis?.topics) ? analysis.topics.map(String) : [],
-      summary: String(analysis?.summary || ""),
-      // Thumbnails when the scraper made them; full photos are embedded only if small (previews.ts).
-      media: thumbs.length ? thumbs : images,
-      media_total: Math.max(images.length, thumbs.length, Array.isArray(post.image_urls) ? post.image_urls.length : 0),
-      sent_at: null
-    });
-  }
-  return items;
-}
-function loadItems(root) {
-  const dir = threadsRoot(root);
-  const items = [...fromReviews(root), ...dir ? fromPosts(dir) : []];
-  items.sort((a, b) => String(b.published_at || "").localeCompare(String(a.published_at || "")));
-  return { items, threads_root: dir };
-}
-function inPeriod(items, hours) {
-  if (!hours || hours <= 0) return items;
-  const cutoff = Date.now() - hours * 3600 * 1e3;
-  return items.filter((item) => {
-    const ms = Date.parse(String(item.published_at || ""));
-    return !Number.isNaN(ms) && ms >= cutoff;
-  });
 }
 
 // src/report/index.ts

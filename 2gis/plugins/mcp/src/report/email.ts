@@ -34,6 +34,7 @@ export function combinedEmailHtml(
   const allNegatives = items.filter((item) => item.relevant && item.sentiment === "negative");
   const negatives = allNegatives.filter((item) => !item.sent_at).slice(0, 40);
   const seenNegatives = allNegatives.length - allNegatives.filter((item) => !item.sent_at).length;
+  const neutrals = items.filter((item) => item.relevant && item.sentiment === "neutral" && !item.sent_at).slice(0, 40);
   const fresh = items.filter((item) => !item.sent_at).length;
   const summary = overview.summary
     ? overview.summary
@@ -79,12 +80,23 @@ export function combinedEmailHtml(
         `<td ${TD}><a href="${esc(item.url)}" style="color:#1c5cab">открыть</a></td></tr>`
     )
     .join("");
+  const textCell = (item: Item) =>
+    (item.summary ? `<b>${esc(item.summary)}</b><br>` : "") + esc(item.text).replace(/\n/g, "<br>");
+  const neutralRows = neutrals
+    .map(
+      (item) =>
+        `<tr><td ${TD}>${esc(when(item.published_at, timezone))}</td><td ${TD}>${SOURCE[item.source]}</td>` +
+        `<td ${TD}>${esc(item.author)}<br>${esc(item.place)}</td>` +
+        `<td ${TD}>${textCell(item)}</td>` +
+        `<td ${TD}><a href="${esc(item.url)}" style="color:#1c5cab">открыть</a></td></tr>`
+    )
+    .join("");
   const everyRow = items
     .map(
       (item) =>
         `<tr><td ${TD}>${esc(when(item.published_at, timezone))}</td><td ${TD}>${SOURCE[item.source]}</td>` +
         `<td ${TD}>${esc(item.author)}<br>${esc(item.place)}</td>` +
-        `<td ${TD}>${esc(item.text).replace(/\n/g, "<br>")}</td>` +
+        `<td ${TD}>${textCell(item)}</td>` +
         `<td ${TD}><a href="${esc(item.url)}" style="color:#1c5cab">открыть</a></td></tr>`
     )
     .join("");
@@ -117,6 +129,13 @@ export function combinedEmailHtml(
         '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%">' +
         `<tr><th ${TH}>Дата</th><th ${TH}>Источник</th><th ${TH}>Место</th><th ${TH}>★</th><th ${TH}>Суть</th><th ${TH}></th></tr>` +
         negativeRows +
+        "</table>"
+      : "",
+    neutrals.length && items.length > FULL_TEXT_MAX
+      ? `<h2 style="font-size:16px;margin:20px 0 6px;color:${COLORS.neutral}">Новые нейтральные упоминания · ${neutrals.length}</h2>` +
+        '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%">' +
+        `<tr><th ${TH}>Дата</th><th ${TH}>Источник</th><th ${TH}>Автор</th><th ${TH}>Суть и текст</th><th ${TH}></th></tr>` +
+        neutralRows +
         "</table>"
       : "",
     items.length && items.length <= FULL_TEXT_MAX
